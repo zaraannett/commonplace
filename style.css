@@ -219,7 +219,33 @@ nav::-webkit-scrollbar{display:none;}
 .day-head .t1{font-family:'Newsreader',serif;font-weight:400;font-size:34px;line-height:1.05;}
 .day-head .t2{font-family:'Newsreader',serif;font-style:italic;font-weight:300;font-size:34px;line-height:1.05;}
 .day-head .d{font-size:10.5px;color:var(--soft);text-transform:uppercase;letter-spacing:.1em;margin-top:8px;}
-.week{margin-top:30px;}
+.week{margin-top:30px;overflow-x:auto;padding-bottom:8px;}
+.week-grid{display:grid;grid-template-columns:repeat(7,minmax(150px,1fr));gap:0;min-width:1050px;border:1px solid var(--line);border-radius:3px;overflow:hidden;}
+.wday{
+  background-color:#FBFAF3;border-right:1px solid var(--line);padding:0 0 14px;min-height:120px;
+  background-image:
+    repeating-linear-gradient(0deg, rgba(107,119,191,.1) 0 1px, transparent 1px 9px),
+    repeating-linear-gradient(90deg, rgba(107,119,191,.1) 0 1px, transparent 1px 9px);
+}
+.wday:last-child{border-right:none;}
+.wday .wh{
+  background:var(--card);border-bottom:1px solid var(--line);
+  padding:9px 10px 7px;margin-bottom:10px;display:flex;align-items:baseline;gap:7px;
+}
+.wday .wh .num{font-family:'Newsreader',serif;font-size:21px;}
+.wday .wh .nm{font-size:10px;color:var(--soft);text-transform:uppercase;letter-spacing:.09em;}
+.wday.today .wh{background:var(--ink);}
+.wday.today .wh .num,.wday.today .wh .nm{color:var(--paper);}
+.blk{
+  margin:0 8px 8px;border-radius:2px;padding:6px 9px;font-size:11px;line-height:1.4;
+  border-left:3px solid;background:var(--card);box-shadow:0 1px 0 rgba(40,35,28,.05);cursor:pointer;
+}
+.blk.done{opacity:.55;text-decoration:line-through;}
+.blk .bt{font-size:9.5px;color:var(--soft);letter-spacing:.05em;text-transform:uppercase;display:block;}
+.blk.peri{border-color:var(--peri);} .blk.sage{border-color:var(--sage);}
+.blk.rose{border-color:var(--rose);} .blk.butter{border-color:var(--butter);}
+.blk.lilac{border-color:var(--lilac);} .blk.cyan{border-color:var(--cyan);}
+.wday-empty{margin:0 10px;font-size:10.5px;color:var(--line);}
 
 .capture{
   position:fixed;right:22px;bottom:24px;z-index:95;width:54px;height:54px;border-radius:50%;

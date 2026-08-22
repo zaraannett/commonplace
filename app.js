@@ -352,7 +352,7 @@ function bigListCard() {
   const items = entries.filter((e) => (e.type === "todo" || e.type === "reply") && matchesFilter(e))
     .sort((a, b) => (a.done - b.done) || (a.dueAt || "9999").localeCompare(b.dueAt || "9999"));
   if (!items.length && (activeTag || searchQuery)) return null;
-  const card = makeCard("butter wide");
+  const card = makeCard("butter wide pin");
   card.innerHTML =
     `<div class="meta"><span>The Big List</span><span class="tags"><span class="tag butter">everything open</span></span></div>` +
     items.map((e) => rowHtml(e, { showDot: true })).join("") +
@@ -594,9 +594,44 @@ function orderCards(cards) {
   return ordered;
 }
 
+function renderWeekView() {
+  const el = document.getElementById("week-grid");
+  if (!el) return;
+  el.innerHTML = "";
+  const today = todayStart();
+  const monday = mondayOf(today);
+  const names = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(monday);
+    d.setDate(d.getDate() + i);
+    const iso = d.toISOString().slice(0, 10);
+    const isToday = daysBetween(today, d) === 0;
+    const dayItems = entries.filter((e) => e.dueAt === iso && e.type !== "habit" && matchesFilter(e));
+    const col = document.createElement("div");
+    col.className = "wday" + (isToday ? " today" : "");
+    col.innerHTML = `<div class="wh"><span class="num">${d.getDate()}</span><span class="nm">${names[i]}</span></div>`;
+    if (!dayItems.length) {
+      col.innerHTML += `<div class="wday-empty">nothing due</div>`;
+    } else {
+      dayItems.forEach((e) => {
+        const c = colorFor(e.tags[0] || "todo");
+        const block = document.createElement("div");
+        block.className = "blk " + c + (e.done ? " done" : "");
+        block.innerHTML = `<span class="bt">${e.type}</span>${escapeHtml(e.title || e.body)}`;
+        if (e.type === "todo" || e.type === "reply") {
+          block.addEventListener("click", () => toggleDone(e.id));
+        }
+        col.appendChild(block);
+      });
+    }
+    el.appendChild(col);
+  }
+}
+
 function render() {
   renderChips();
   renderWeekStrip();
+  renderWeekView();
   renderNav();
   const board = document.getElementById("board");
   board.innerHTML = "";
