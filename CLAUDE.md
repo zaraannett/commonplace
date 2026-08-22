@@ -42,9 +42,20 @@ step — static files served as-is by GitHub Pages.
 - **Habits**: `type: "habit"` entries track a `weeklyTarget` and a `checkins[]` array of ISO dates;
   clicking a habit row toggles *today's* checkin (not a permanent `done`); counter shows
   "{checked-in this week}/{target}".
-- **Custom tabs**: `+ tab` prompts for a label + a tag, creates a saved filtered view (in
-  `settings.views`), styled as a dog-eared paper tab (not a filing-cabinet drawer tab). Hover to
-  see its ✕ to remove it.
+- **Tabs — "drawer logic"**: every tab (fixed and custom alike) is one continuous folder-edge
+  shape with the content panel below it, not a separate nav-link style. Idle tabs are outlined
+  cream cards with curved fillet "feet" (`::before`/`::after` radial-gradients) that interlock with
+  their neighbors; the active tab and the panel's 7px top border are both solid `--grey`
+  (`#8B8375`) with no border between them, so they read as one shape — literally the open folder's
+  top edge. No box-shadows, no transforms anywhere in the tab bar; depth comes entirely from that
+  shared grey continuation. This went through several rounds of visual iteration (see conversation)
+  before landing on an exact spec that was implemented verbatim — if this ever needs to change,
+  treat the shape/geometry as deliberate and load-bearing, not incidental.
+  `+ tab` prompts for a label + a tag and creates a saved filtered view (`settings.views`); custom
+  tabs show a hover ✕ to remove them. Tab row scrolls horizontally on narrow viewports (added
+  beyond the literal spec, which assumed one row fits — needed for 8+ tabs on mobile) rather than
+  wrapping, so the active tab always stays adjacent to the folder panel and the illusion holds at
+  any width.
 - **Fixed tabs are real filtered views now**, not just fallbacks to the full board: Notes shows
   only notes, Diary only diary entries, People shows the Owe-a-Reply list, Big List shows just the
   checkable items, Month shows just the calendar. The week-strip ribbon is Everything-tab-only

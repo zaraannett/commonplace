@@ -40,30 +40,33 @@
     <div class="chips" id="chips"></div>
   </div>
 
-  <nav id="nav"></nav>
+  <nav id="nav" class="tabrow"></nav>
 
   <!-- ═══ BOARD ═══ -->
   <main class="view on" id="v-board">
-
-    <section class="week-strip" id="week-strip" aria-label="This week"></section>
-
-    <div class="board" id="board"></div>
-
+    <div class="folder">
+      <section class="week-strip" id="week-strip" aria-label="This week"></section>
+      <div class="board" id="board"></div>
+    </div>
   </main>
 
   <!-- ═══ DAY ═══ -->
   <section class="view day" id="v-day">
-    <div class="day-head">
-      <div class="t1">Today's</div>
-      <div class="t2">Schedule</div>
-      <div class="d">Phase 2+ — Day view is a static preview for now</div>
+    <div class="folder">
+      <div class="day-head">
+        <div class="t1">Today's</div>
+        <div class="t2">Schedule</div>
+        <div class="d">Phase 2+ — Day view is a static preview for now</div>
+      </div>
+      <p class="soft" style="padding:0 4px;">The Day timeline goes live once entries carry real times (Phase 3). For now, capture everything from the Everything board.</p>
     </div>
-    <p class="soft" style="padding:0 4px;">The Day timeline goes live once entries carry real times (Phase 3). For now, capture everything from the Everything board.</p>
   </section>
 
   <!-- ═══ WEEK ═══ -->
   <section class="view week" id="v-week">
-    <div class="week-grid" id="week-grid"></div>
+    <div class="folder">
+      <div class="week-grid" id="week-grid"></div>
+    </div>
   </section>
 
   <footer>

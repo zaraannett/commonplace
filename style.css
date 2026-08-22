@@ -1,5 +1,6 @@
 :root{
   --paper:#F7F3EB; --card:#FCFAF4; --ink:#28231C; --soft:#79715F; --line:#DDD5C4;
+  --grey:#8B8375;
   --rose:#C25E7C; --butter:#B8862A; --sage:#6F8A57; --peri:#6B77BF; --lilac:#9A6FBF; --cyan:#3F97A3;
 }
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -32,36 +33,74 @@ canvas#band{display:block;width:100%;height:32px;margin-top:16px;border-radius:2
 .chip.active{outline:1.5px solid var(--ink);}
 .chip.addtag{border-style:dashed;}
 
-nav{display:flex;align-items:flex-end;gap:14px;border-bottom:1px solid var(--line);margin-top:16px;overflow-x:auto;scrollbar-width:none;}
-nav::-webkit-scrollbar{display:none;}
-.navtab{
-  font-family:'Newsreader',serif;font-size:16.5px;color:var(--soft);text-decoration:none;
-  padding:6px 4px 9px;white-space:nowrap;cursor:grab;background:none;border:none;
-  display:inline-flex;align-items:center;gap:6px;touch-action:none;user-select:none;
+/* ── drawer logic: tabs are bumps in one continuous folder edge ── */
+.tabrow{
+  display:flex;align-items:flex-end;gap:0;position:relative;
+  margin:16px -18px 0;padding:0 18px;overflow-x:auto;scrollbar-width:none;
 }
-.navtab:active{cursor:grabbing;}
-.navtab.active{color:var(--ink);font-style:italic;border-bottom:2px solid var(--ink);}
-.navtab.dragging{opacity:.4;}
+.tabrow::-webkit-scrollbar{display:none;}
+.tab + .tab{margin-left:6px;}
 
-/* custom tabs: paper index-tab, dog-eared, not a filing-cabinet tab */
-.navtab.custom{
-  background:var(--card);border:1px solid var(--line);border-bottom:none;
-  border-radius:6px 6px 0 0;padding:6px 20px 8px 12px;margin-bottom:-1px;
-  transform:rotate(-.4deg);box-shadow:0 1px 0 rgba(40,35,28,.05);
-  font-style:normal;position:relative;font-size:14.5px;
+.tab{
+  position:relative;cursor:pointer;z-index:1;
+  font-family:'Newsreader',serif;font-size:15px;color:var(--soft);
+  background:var(--card);
+  border:1px solid var(--line);border-bottom:none;
+  border-radius:9px 9px 0 0;
+  padding:7px 17px;
+  margin-bottom:-4px;
+  white-space:nowrap;
+  user-select:none;
 }
-.navtab.custom::after{
-  content:"";position:absolute;top:0;right:0;width:0;height:0;
-  border-style:solid;border-width:0 10px 10px 0;
-  border-color:transparent var(--paper) transparent transparent;
+.tab::before,.tab::after{
+  content:"";position:absolute;bottom:0;width:12px;height:12px;
 }
-.navtab.custom.active{color:var(--ink);font-style:italic;border-color:var(--line);border-bottom:none;}
-.navclose{opacity:0;font-size:10px;color:var(--soft);margin-left:1px;}
-.navtab.custom:hover .navclose{opacity:1;}
-.addtab{
-  border:1px dashed var(--line);border-radius:6px 6px 0 0;color:var(--soft);
-  font-family:'Courier Prime',monospace;font-size:11px;padding:6px 10px 8px;
-  cursor:pointer;background:none;margin-bottom:-1px;white-space:nowrap;
+.tab::before{
+  left:-11px;
+  background:radial-gradient(circle at 0 0, transparent 10px, var(--line) 10px 11px, var(--card) 11px);
+}
+.tab::after{
+  right:-11px;
+  background:radial-gradient(circle at 100% 0, transparent 10px, var(--line) 10px 11px, var(--card) 11px);
+}
+.tab .dot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:7px;vertical-align:2px;background:var(--soft);opacity:.5;}
+.tab.butter .dot{background:var(--butter);opacity:.85;} .tab.lilac .dot{background:var(--lilac);opacity:.85;}
+.tab.rose .dot{background:var(--rose);opacity:.85;} .tab.sage .dot{background:var(--sage);opacity:.85;}
+.tab.peri .dot{background:var(--peri);opacity:.85;} .tab.cyan .dot{background:var(--cyan);opacity:.85;}
+
+.tab.active{
+  z-index:3;
+  background:var(--grey);color:var(--paper);
+  border-color:var(--grey);
+  font-style:italic;
+}
+.tab.active::before{left:-11px;background:radial-gradient(circle at 0 0, transparent 10px, var(--grey) 10px);}
+.tab.active::after{right:-11px;background:radial-gradient(circle at 100% 0, transparent 10px, var(--grey) 10px);}
+.tab.active .dot{background:var(--paper);opacity:1;}
+
+.tab.ghost{
+  background:transparent;color:var(--soft);
+  font-family:'Courier Prime',monospace;font-size:11px;padding:8px 13px;
+  border:1px dashed var(--line);border-bottom:none;border-radius:9px 9px 0 0;
+}
+.tab.ghost::before,.tab.ghost::after{display:none;}
+.tab.dragging{opacity:.4;}
+
+.navclose{
+  position:absolute;top:2px;right:4px;opacity:0;font-size:9px;color:inherit;line-height:1;
+}
+.tab:hover .navclose{opacity:.6;}
+.tab.active .navclose{opacity:.5;}
+
+/* folder body — its grey top edge IS the top of the open folder */
+.folder{
+  position:relative;z-index:2;
+  background:var(--card);
+  border:1px solid var(--line);
+  border-top:7px solid var(--grey);
+  border-radius:6px;
+  box-shadow:0 1px 0 rgba(40,35,28,.06);
+  padding:20px;
 }
 
 /* drag handle on cards */

@@ -735,14 +735,14 @@ function drawBand() {
 
 // ── nav (fixed tabs + user-added custom tabs, both reorderable) ──────
 const FIXED_TABS = [
-  { id: "everything", label: "Everything", view: "board", tag: null },
-  { id: "biglist", label: "The Big List", view: "board", tag: null },
-  { id: "notes", label: "Notes", view: "board", tag: null },
-  { id: "diary", label: "Diary", view: "board", tag: null },
-  { id: "people", label: "People", view: "board", tag: null },
-  { id: "day", label: "Day", view: "day", tag: null },
-  { id: "week", label: "Week", view: "week", tag: null },
-  { id: "month", label: "Month", view: "board", tag: null },
+  { id: "everything", label: "Everything", view: "board", tag: null, dotColor: "" },
+  { id: "biglist", label: "The Big List", view: "board", tag: null, dotColor: "butter" },
+  { id: "notes", label: "Notes", view: "board", tag: null, dotColor: "lilac" },
+  { id: "diary", label: "Diary", view: "board", tag: null, dotColor: "sage" },
+  { id: "people", label: "People", view: "board", tag: null, dotColor: "rose" },
+  { id: "day", label: "Day", view: "day", tag: null, dotColor: "cyan" },
+  { id: "week", label: "Week", view: "week", tag: null, dotColor: "peri" },
+  { id: "month", label: "Month", view: "board", tag: null, dotColor: "peri" },
 ];
 let activeNavId = "everything";
 
@@ -754,7 +754,7 @@ function switchView(view) {
 function renderNav() {
   const nav = document.getElementById("nav");
   nav.innerHTML = "";
-  const all = FIXED_TABS.concat(customViews.map((v) => ({ id: v.id, label: v.label, view: "board", tag: v.tag, custom: true })));
+  const all = FIXED_TABS.concat(customViews.map((v) => ({ id: v.id, label: v.label, view: "board", tag: v.tag, custom: true, dotColor: colorFor(v.tag) })));
   const order = loadNavOrder();
   const map = new Map(all.map((t) => [t.id, t]));
   const ordered = [];
@@ -762,10 +762,10 @@ function renderNav() {
   all.forEach((t) => { if (map.has(t.id)) ordered.push(t); });
 
   ordered.forEach((t) => {
-    const a = document.createElement("a");
-    a.className = "navtab" + (t.custom ? " custom" : "") + (t.id === activeNavId ? " active" : "");
+    const a = document.createElement("div");
+    a.className = "tab" + (t.dotColor ? " " + t.dotColor : "") + (t.id === activeNavId ? " active" : "");
     a.dataset.navid = t.id;
-    a.innerHTML = escapeHtml(t.label) + (t.custom ? `<span class="navclose" data-closeid="${t.id}" title="remove tab">✕</span>` : "");
+    a.innerHTML = `<span class="dot"></span>${escapeHtml(t.label)}` + (t.custom ? `<span class="navclose" data-closeid="${t.id}" title="remove tab">✕</span>` : "");
     a.addEventListener("click", (ev) => {
       if (ev.target.dataset.closeid) return;
       activeNavId = t.id;
@@ -775,9 +775,8 @@ function renderNav() {
     });
     nav.appendChild(a);
   });
-  const addBtn = document.createElement("button");
-  addBtn.className = "addtab no-drag";
-  addBtn.type = "button";
+  const addBtn = document.createElement("div");
+  addBtn.className = "tab ghost no-drag";
   addBtn.textContent = "+ tab";
   addBtn.addEventListener("click", addCustomView);
   nav.appendChild(addBtn);
@@ -900,7 +899,7 @@ enableDragReorder(document.getElementById("board"), {
   onReorder: saveBoardOrder,
 });
 enableDragReorder(document.getElementById("nav"), {
-  itemSelector: ".navtab",
+  itemSelector: ".tab",
   axis: "x",
   onReorder: saveNavOrder,
 });
