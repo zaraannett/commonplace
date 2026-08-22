@@ -1,6 +1,6 @@
 # Commonplace
 
-Personal catch-all system for Zara. Full spec: `../Downloads/commonplace-spec.md` (copy it into
+Personal catch-all system. Full spec: `../Downloads/commonplace-spec.md` (copy it into
 this repo if `Downloads` isn't reliably present for future sessions). Visual source of truth for
 styling: `../Downloads/commonplace-mockup-v3.html`.
 
@@ -61,7 +61,7 @@ step — static files served as-is by GitHub Pages.
   4-row tile, no seam). Density *and* opacity both taper left→right so the sparse end fades out
   rather than staying full-saturation (which read as "heavier" on the cool-colored right side even
   with fewer dots — a contrast illusion, not a density bug).
-- No seed/demo data — first login is a blank slate, since this is Zara's real data now, not a demo.
+- No seed/demo data — first login is a blank slate, since this is real data now, not a demo.
 
 ### Deliberate simplifications vs. the mockup
 - Day view is still a static placeholder (needs a time-of-day field on entries to do properly).
@@ -72,10 +72,10 @@ step — static files served as-is by GitHub Pages.
 - AI auto-tagging (Gemini) so capture doesn't require picking type/tags by hand.
 - Real Day view (needs a time field added to the schema).
 - Google Calendar sync — **decided to start read-only** (pull gcal events in) before adding
-  two-way push, to avoid risk of writing bad data into Zara's real calendar. Needs a Google Cloud
-  Console project + OAuth credentials (Zara's own setup, like Supabase was).
-- Possible Phase 5: Gmail triage (auto-surface emails that need a reply) — floated as an option,
-  not committed to yet. Texts/SMS are a dead end (Apple doesn't allow third-party Messages access);
-  the iOS share-sheet capture flow (still not built) is the intended path for "share one important
-  text in when it's worth tracking."
+  two-way push, to avoid risk of writing bad data into the real calendar. Needs a Google Cloud
+  Console project + OAuth credentials (same kind of one-time setup as Supabase was).
+- Possible later phase: Gmail triage (auto-surface emails that need a reply) — floated as an
+  option, not committed to yet. Texts/SMS are a dead end (Apple doesn't allow third-party Messages
+  access); the iOS share-sheet capture flow (still not built) is the intended path for "share one
+  important text in when it's worth tracking."
 - PWA installability (manifest, add-to-homescreen) not yet done.
