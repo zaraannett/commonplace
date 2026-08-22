@@ -216,7 +216,6 @@ function showLogin() {
 function allTags() {
   const set = new Set();
   entries.forEach((e) => e.tags.forEach((t) => set.add(t)));
-  Object.keys(tagColors).forEach((t) => set.add(t));
   return Array.from(set);
 }
 function matchesFilter(e) {
