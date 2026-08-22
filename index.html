@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#F7F3EB">
+<title>Commonplace</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;1,6..72,300;1,6..72,400&family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Caveat:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ═══ LOGIN GATE ═══ -->
+<div class="authgate" id="authgate">
+  <form class="authcard" id="loginForm">
+    <div class="wordmark" style="font-size:28px;margin-bottom:4px;">Commonplace</div>
+    <input id="loginEmail" type="email" placeholder="email" autocomplete="username" required />
+    <input id="loginPassword" type="password" placeholder="password" autocomplete="current-password" required />
+    <div class="autherr" id="loginError"></div>
+    <button class="mbtn" type="submit">log in</button>
+  </form>
+</div>
+
+<div class="wrap">
+
+  <header>
+    <div class="mast-top">
+      <div class="wordmark">Commonplace</div>
+      <div style="text-align:right;">
+        <div class="datestamp" id="datestamp"></div>
+        <div class="signout" id="signoutBtn" style="display:none;">sign out</div>
+      </div>
+    </div>
+    <canvas id="band" height="32" aria-hidden="true"></canvas>
+  </header>
+
+  <div class="controls">
+    <input class="search" id="search" placeholder="⌕  search everything…" />
+    <div class="chips" id="chips"></div>
+  </div>
+
+  <nav id="nav"></nav>
+
+  <!-- ═══ BOARD ═══ -->
+  <main class="view on" id="v-board">
+
+    <section class="week-strip" id="week-strip" aria-label="This week"></section>
+
+    <div class="board" id="board"></div>
+
+  </main>
+
+  <!-- ═══ DAY ═══ -->
+  <section class="view day" id="v-day">
+    <div class="day-head">
+      <div class="t1">Today's</div>
+      <div class="t2">Schedule</div>
+      <div class="d">Phase 2+ — Day view is a static preview for now</div>
+    </div>
+    <p class="soft" style="padding:0 4px;">The Day timeline goes live once entries carry real times (Phase 3). For now, capture everything from the Everything board.</p>
+  </section>
+
+  <!-- ═══ WEEK ═══ -->
+  <section class="view week" id="v-week">
+    <p class="soft" style="padding:0 4px;">The Week grid goes live in Phase 3. For now, capture everything from the Everything board.</p>
+  </section>
+
+  <footer>
+    <div class="fmark">Commonplace</div>
+    everything, in one place
+  </footer>
+
+</div>
+
+<button class="capture" id="captureBtn" aria-label="New entry">+</button>
+
+<!-- ═══ CAPTURE MODAL ═══ -->
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal" role="dialog" aria-modal="true" aria-label="New entry">
+    <div class="modal-title">New entry</div>
+    <textarea id="mBody" placeholder="what's on your mind…" rows="3"></textarea>
+    <div class="modal-row">
+      <label class="mlabel">type</label>
+      <select id="mType">
+        <option value="note">note</option>
+        <option value="todo">to-do</option>
+        <option value="reply">owe a reply</option>
+        <option value="diary">diary</option>
+        <option value="scratch">scratchpad</option>
+        <option value="event">event</option>
+        <option value="habit">habit</option>
+      </select>
+    </div>
+    <div class="modal-row" id="mTitleRow">
+      <label class="mlabel">title</label>
+      <input id="mTitle" placeholder="optional — shown as card heading" />
+    </div>
+    <div class="modal-row">
+      <label class="mlabel">tags</label>
+      <input id="mTags" placeholder="#tag #tag" />
+    </div>
+    <div class="modal-row" id="mDueRow">
+      <label class="mlabel">due / when</label>
+      <input id="mDue" type="date" />
+    </div>
+    <div class="modal-row" id="mHabitRow" style="display:none;">
+      <label class="mlabel">weekly ×</label>
+      <input id="mHabitTarget" type="number" min="1" max="14" value="3" />
+    </div>
+    <label class="mcheck"><input type="checkbox" id="mPin"> pin to board</label>
+    <div class="modal-actions">
+      <button class="mbtn ghost" id="mCancel">cancel</button>
+      <button class="mbtn" id="mSave">save</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
