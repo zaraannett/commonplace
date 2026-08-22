@@ -1,6 +1,6 @@
 # Commonplace
 
-Personal catch-all system for Zara. Full spec: `../Downloads/commonplace-spec.md` (copy it into
+Personal catch-all system. Full spec: `../Downloads/commonplace-spec.md` (copy it into
 this repo if `Downloads` isn't reliably present for future sessions). Visual source of truth for
 styling: `../Downloads/commonplace-mockup-v3.html`.
 
@@ -8,7 +8,7 @@ styling: `../Downloads/commonplace-mockup-v3.html`.
 
 Everything board + capture + manual tags + checkboxes + habits + drag reorder + user-created tabs,
 persisted to `localStorage`. No build step — open `index.html` directly or serve the folder
-statically. Next up is wiring this to Supabase so it's a real live app instead of per-browser
+statically. Next is wiring this to Supabase so it's a real live app instead of per-browser
 localStorage (see "Live database" below) — deploy target is GitHub Pages (user already has a
 GitHub account and has deployed static sites before).
 
@@ -52,7 +52,7 @@ GitHub account and has deployed static sites before).
 
 ## Live database (in progress)
 
-Zara wants this to be a real app she can add to from her phone, not just a local file — i.e.
+A "real app" that can add to phone, not just a local file — i.e.
 Phase 2 (Supabase persistence) pulled forward, deployed live rather than iterated on locally only.
 Plan: keep the same `entries` shape, swap `localStorage` reads/writes in `app.js` for Supabase
 client calls, add lightweight single-user auth since the deployed URL will be public. Needs Zara to
