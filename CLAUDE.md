@@ -18,6 +18,14 @@ step — static files served as-is by GitHub Pages.
   by RLS policies, not by hiding this key)
 - `supabase-schema.sql` — the `entries` + `settings` table definitions and RLS policies; already
   run once against the live project, kept here for reference/rebuilding
+- `manifest.json`, `icon-192.png`, `icon-512.png`, `icon-512-maskable.png`, `sw.js` — PWA
+  installability. Icons are a plain italic serif "C" (Georgia, since a blank canvas can't load
+  Newsreader) on the paper color, generated via a throwaway `<canvas>` script, not authored in a
+  design tool — regenerate the same way if they ever need to change. `sw.js` caches only the
+  same-origin app-shell files (index.html/style.css/app.js/config.js/manifest.json) via
+  stale-while-revalidate; it explicitly bails on any cross-origin request (`url.origin !==
+  self.location.origin`) so it never touches Supabase or the CDN script — live data and realtime
+  sync are unaffected by it.
 
 ### What's implemented
 - **Backend**: Supabase Postgres, not localStorage. `entries` table shaped like the spec's sketch

@@ -1053,6 +1053,9 @@ enableDragReorder(document.getElementById("nav"), {
   axis: "x",
   onReorder: saveNavOrder,
 });
+if ("serviceWorker" in navigator) {
+  addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+}
 
 (async function boot() {
   const { data: { session } } = await db.auth.getSession();
