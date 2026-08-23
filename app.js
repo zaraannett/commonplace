@@ -180,7 +180,9 @@ function deleteEntry(id) {
 function updateTaskDetail(id, detail) {
   const e = entries.find((x) => x.id === id);
   if (!e) return;
+  const before = e.title;
   e.title = detail;
+  if (before.trim() !== detail.trim()) render();
   db.from("entries").update({ title: e.title }).eq("id", id).then(({ error }) => { if (error) console.error("update failed", error); });
 }
 
@@ -409,23 +411,36 @@ function taskListCard() {
   return card;
 }
 
+function hasTaskDetail(e) {
+  return !!(e.title && e.title.trim());
+}
 function taskRowHtml(e) {
   const due = fmtDue(e);
   const end = due ? `<span class="${due.cls}">${due.text}</span>` : "";
   const expanded = expandedTaskIds.has(e.id);
-  const hasDetail = !!(e.title && e.title.trim());
   return `<div class="taskrow">
       <div class="row${e.done ? " done" : ""}" data-id="${e.id}">
-        <div class="box"></div><span class="txt" data-detail-toggle="${e.id}">${escapeHtml(e.body)}${hasDetail ? '<span class="detail-dot">note</span>' : ""}</span>
+        <div class="box"></div><span class="txt" data-detail-toggle="${e.id}">${escapeHtml(e.body)}</span>
         <span class="end">${end}<span class="del" data-del="${e.id}" title="delete">✕</span></span>
       </div>
-      ${expanded ? `<div class="task-detail"><textarea data-detail-input="${e.id}" placeholder="add more detail…">${escapeHtml(e.title || "")}</textarea></div>` : ""}
+      ${expanded ? `<div class="task-detail"><textarea data-detail-input="${e.id}" placeholder="add a note — saving pulls this task onto its own card…">${escapeHtml(e.title || "")}</textarea></div>` : ""}
     </div>`;
+}
+
+function taskDetailCard(e) {
+  const card = makeCard("postit");
+  card.innerHTML =
+    `<div class="meta"><span>Task</span><span class="boxclose" data-del="${e.id}" title="delete">✕</span></div>` +
+    `<div class="row${e.done ? " done" : ""}" data-id="${e.id}"><div class="box"></div><span class="txt">${escapeHtml(e.body)}</span></div>` +
+    `<textarea class="postit-editor" data-detail-input="${e.id}" placeholder="note…">${escapeHtml(e.title || "")}</textarea>`;
+  wireRows(card);
+  wireTaskDetailInputs(card);
+  return card;
 }
 
 function taskBoxCard(box, index) {
   const isUnsorted = box.id === UNSORTED_BOX;
-  const items = entries.filter((e) => e.type === "task" && matchesFilter(e) && (isUnsorted ? !e.boxId : e.boxId === box.id))
+  const items = entries.filter((e) => e.type === "task" && !hasTaskDetail(e) && matchesFilter(e) && (isUnsorted ? !e.boxId : e.boxId === box.id))
     .sort((a, b) => a.done - b.done);
   if (!items.length && (isUnsorted || activeTag || searchQuery)) return null;
   const tints = ["", "butter", "sage", "lilac", "peri"];
@@ -659,6 +674,8 @@ function buildBoardCards() {
       const bc = taskBoxCard(box, i);
       if (bc) list.push({ id: "taskbox-" + box.id, el: bc });
     });
+    entries.filter((e) => e.type === "task" && hasTaskDetail(e) && matchesFilter(e))
+      .forEach((e) => list.push({ id: "taskdetail-" + e.id, el: taskDetailCard(e) }));
     const addBoxTile = makeCard("mini addbox");
     addBoxTile.innerHTML = `<div class="meta"><span>+ new box</span></div>`;
     addBoxTile.addEventListener("click", addTaskBox);
