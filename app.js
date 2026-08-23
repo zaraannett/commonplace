@@ -216,7 +216,11 @@ function showLogin() {
 function allTags() {
   const set = new Set();
   entries.forEach((e) => e.tags.forEach((t) => set.add(t)));
+  Object.keys(tagColors).forEach((t) => set.add(t));
   return Array.from(set);
+}
+function tagSpan(tag) {
+  return `<span class="tag ${colorFor(tag)}" data-tag="${escapeHtml(tag)}">#${escapeHtml(tag)}</span>`;
 }
 function matchesFilter(e) {
   if (activeTag && !e.tags.includes(activeTag)) return false;
@@ -366,7 +370,7 @@ function owedReplyCard() {
   if (!items.length && (activeTag || searchQuery)) return null;
   const card = makeCard("postit");
   card.innerHTML =
-    `<div class="meta"><span>Owe a reply</span><span class="tags"><span class="tag rose">#respond</span></span></div>` +
+    `<div class="meta"><span>Owe a reply</span><span class="tags">${tagSpan("respond")}</span></div>` +
     items.map((e) => rowHtml(e, { nag: true, bold: true })).join("") +
     addRowHtml("add…");
   wireCardInteractions(card, { type: "reply", tags: ["respond"] });
@@ -378,7 +382,7 @@ function scratchCard() {
   if (!items.length && (activeTag || searchQuery)) return null;
   const card = makeCard("taped");
   card.innerHTML =
-    `<div class="meta"><span>Scratchpad</span><span class="tags"><span class="tag lilac">#loose</span></span></div>` +
+    `<div class="meta"><span>Scratchpad</span><span class="tags">${tagSpan("loose")}</span></div>` +
     `<div class="scribble">` +
     items.map((e) => `<span class="scratch-line${e.done ? " strike" : ""}" data-id="${e.id}" style="cursor:pointer;${e.done ? "text-decoration:line-through;color:var(--soft);" : ""}">${escapeHtml(e.body)}</span>`).join("<br>") +
     `</div>` +
@@ -397,7 +401,7 @@ function diaryCards() {
     const date = new Date(e.createdAt);
     const dateStr = date.toLocaleDateString("en-US", { month: "short", day: "numeric" }) + " · " + date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
     card.innerHTML =
-      `<div class="meta"><span>${dateStr}</span><span class="tags"><span class="tag">#diary</span></span></div>` +
+      `<div class="meta"><span>${dateStr}</span><span class="tags">${tagSpan("diary")}</span></div>` +
       (e.title ? `<h2>${escapeHtml(e.title)}</h2>` : "") +
       `<p>${escapeHtml(e.body)}</p>`;
     return card;
@@ -413,7 +417,7 @@ function noteCards() {
     card.dataset.entryId = e.id;
     const date = new Date(e.createdAt);
     const dateStr = date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-    const tagsHtml = e.tags.map((t) => `<span class="tag ${colorFor(t)}">#${t}</span>`).join(" ");
+    const tagsHtml = e.tags.map((t) => tagSpan(t)).join(" ");
     card.innerHTML =
       `<div class="meta"><span>${dateStr}</span><span class="tags">${tagsHtml}</span></div>` +
       (e.title ? `<h2>${escapeHtml(e.title)}</h2>` : "") +
@@ -430,7 +434,7 @@ function pinnedCards() {
     const date = new Date(e.createdAt);
     const dateStr = date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
     card.innerHTML =
-      `<div class="meta"><span>Pinned · ${dateStr}</span><span class="tags"><span class="tag ${colorFor(e.tags[0] || "todo")}">#${e.tags[0] || "todo"}</span></span></div>` +
+      `<div class="meta"><span>Pinned · ${dateStr}</span><span class="tags">${tagSpan(e.tags[0] || "todo")}</span></div>` +
       rowHtml(e);
     wireRows(card);
     return card;
@@ -492,7 +496,7 @@ function habitsCard() {
   if (!items.length && (activeTag || searchQuery)) return null;
   const card = makeCard("graph");
   card.innerHTML =
-    `<div class="meta"><span>Habits · This week</span><span class="tags"><span class="tag sage">#habit</span></span></div>` +
+    `<div class="meta"><span>Habits · This week</span><span class="tags">${tagSpan("habit")}</span></div>` +
     items.map((e) => habitRowHtml(e)).join("") +
     addRowHtml("add a habit…");
   wireCardInteractions(card, { type: "habit", tags: ["habit"], weeklyTarget: 3, checkins: [] });
@@ -891,6 +895,13 @@ addEventListener("resize", packBoard);
   const md = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
   document.getElementById("datestamp").textContent = `${wd} · ${md} · ${d.getFullYear()}`;
 })();
+document.getElementById("board").addEventListener("click", (ev) => {
+  const t = ev.target.closest("[data-tag]");
+  if (!t) return;
+  const tag = t.dataset.tag;
+  activeTag = activeTag === tag ? null : tag;
+  render();
+});
 enableDragReorder(document.getElementById("board"), {
   itemSelector: ".card",
   handleSelector: ".grip",
