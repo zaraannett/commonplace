@@ -368,7 +368,9 @@ function rowHtml(e, opts) {
     end = `<span class="${due.cls}">${due.text}</span>`;
   }
   const dot = opts.showDot ? `<span class="srcdot ${colorFor(e.tags[0] || "todo")}"></span>` : "";
-  const label = opts.bold && e.title ? `<b>${escapeHtml(e.title)}</b> — ${escapeHtml(e.body)}` : escapeHtml(e.title || e.body);
+  const label = e.type === "task"
+    ? escapeHtml(e.body)
+    : (opts.bold && e.title ? `<b>${escapeHtml(e.title)}</b> — ${escapeHtml(e.body)}` : escapeHtml(e.title || e.body));
   return `<div class="row${e.done ? " done" : ""}" data-id="${e.id}">
       <div class="box"></div>${dot}<span class="txt">${label}</span>
       <span class="end">${end}<span class="del" data-del="${e.id}" title="delete">✕</span></span>
