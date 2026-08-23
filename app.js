@@ -572,6 +572,9 @@ function buildBoardCards() {
   } else if (activeNavId === "biglist") {
     const bl = bigListCard();
     if (bl) list.push({ id: "big-list", el: bl });
+  } else if (activeNavId === "tasks") {
+    const tl = taskListCard();
+    if (tl) list.push({ id: "tasks", el: tl });
   } else if (activeNavId === "month") {
     list.push({ id: "calendar", el: calendarCard() });
   } else {
@@ -755,6 +758,7 @@ function drawBand() {
 const FIXED_TABS = [
   { id: "everything", label: "Everything", view: "board", tag: null, dotColor: "" },
   { id: "biglist", label: "The Big List", view: "board", tag: null, dotColor: "butter" },
+  { id: "tasks", label: "Tasks", view: "board", tag: null, dotColor: "butter" },
   { id: "notes", label: "Notes", view: "board", tag: null, dotColor: "lilac" },
   { id: "diary", label: "Diary", view: "board", tag: null, dotColor: "sage" },
   { id: "people", label: "People", view: "board", tag: null, dotColor: "rose" },
