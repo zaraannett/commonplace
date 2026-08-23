@@ -37,8 +37,18 @@ step — static files served as-is by GitHub Pages.
 - Checkboxes toggle `done` on the shared entry — since Big List / Owe a Reply / pinned cards all
   render the *same* entry objects, checking one clears it everywhere (per spec).
 - The Everything board is fully computed from `entries`: Big List (pinned — pushpin fastener),
-  Owe a Reply, Scratchpad, Habits, Coming Up widget, and the month calendar's due-date dots are all
-  derived live, not hardcoded.
+  Owe a Reply, Scratchpad, Habits, Tasks, Coming Up widget, and the month calendar's due-date dots
+  are all derived live, not hardcoded.
+- **Tasks**: `type: "task"` entries, a plain checkable list separate from Big List — for random
+  one-off to-dos that don't need the tracking/aging Big List gives real todos. Deliberately kept
+  out of Big List's aggregation (which only pulls `todo`/`reply`) rather than reusing `todo` with a
+  flag, since the whole point was "a different bucket," not a filtered view of the same one.
+- Tags shown *on* cards (not just the header chips) are clickable and filter the board the same
+  way — `tagSpan()` helper + one delegated click listener on `#board` for any `[data-tag]`.
+  Header chips intentionally list every registered tag color even before it's used on an entry
+  (so the color's ready the moment you tag something with it) — that's expected, not a bug; if a
+  chip filters to "nothing but Coming Up/Calendar" it means no entry is tagged that way *yet*, not
+  that filtering is broken.
 - **Habits**: `type: "habit"` entries track a `weeklyTarget` and a `checkins[]` array of ISO dates;
   clicking a habit row toggles *today's* checkin (not a permanent `done`); counter shows
   "{checked-in this week}/{target}".

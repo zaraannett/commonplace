@@ -364,6 +364,19 @@ function bigListCard() {
   return card;
 }
 
+function taskListCard() {
+  const items = entries.filter((e) => e.type === "task" && matchesFilter(e))
+    .sort((a, b) => a.done - b.done);
+  if (!items.length && (activeTag || searchQuery)) return null;
+  const card = makeCard("");
+  card.innerHTML =
+    `<div class="meta"><span>Tasks</span><span class="tags">${tagSpan("task")}</span></div>` +
+    items.map((e) => rowHtml(e)).join("") +
+    addRowHtml("add a task…");
+  wireCardInteractions(card, { type: "task", tags: ["task"] });
+  return card;
+}
+
 function owedReplyCard() {
   const items = entries.filter((e) => e.type === "reply" && matchesFilter(e))
     .sort((a, b) => a.done - b.done);
@@ -565,6 +578,8 @@ function buildBoardCards() {
     list.push({ id: "coming-up", el: comingUpCard() });
     const bl = bigListCard();
     if (bl) list.push({ id: "big-list", el: bl });
+    const tl = taskListCard();
+    if (tl) list.push({ id: "tasks", el: tl });
     list.push({ id: "calendar", el: calendarCard() });
     const hb = habitsCard();
     if (hb) list.push({ id: "habits", el: hb });
