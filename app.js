@@ -76,12 +76,14 @@ function toDbRow(e) {
     title: e.title, body: e.body, tags: e.tags, due_at: e.dueAt,
     done: e.done, done_at: e.doneAt, pinned: e.pinned, source: e.source,
     weekly_target: e.weeklyTarget ?? null, checkins: e.checkins ?? null,
+    box_id: e.boxId ?? null,
   };
 }
 function fromDbRow(r) {
   const e = {
     id: r.id, createdAt: r.created_at, type: r.type, title: r.title || "", body: r.body || "",
     tags: r.tags || [], dueAt: r.due_at, done: r.done, doneAt: r.done_at, pinned: r.pinned,
+    boxId: r.box_id || null,
     source: r.source || "manual",
   };
   if (r.weekly_target != null) e.weeklyTarget = r.weekly_target;
@@ -91,6 +93,7 @@ function fromDbRow(r) {
 
 let tagColors = defaultTagColors();
 let customViews = [];
+let taskBoxes = [];
 let cachedNavOrder = [];
 let cachedBoardOrder = [];
 let pushSettingsTimer = null;
@@ -104,11 +107,13 @@ function pushSettings() {
       views: customViews,
       nav_order: cachedNavOrder,
       board_order: cachedBoardOrder,
+      task_boxes: taskBoxes,
     }).then(({ error }) => { if (error) console.error("settings save failed", error); });
   }, 400);
 }
 function saveTagColors(map) { tagColors = map; pushSettings(); }
 function saveViews(v) { customViews = v; pushSettings(); }
+function saveTaskBoxes(v) { taskBoxes = v; pushSettings(); }
 function loadNavOrder() { return cachedNavOrder; }
 function saveNavOrder(order) { cachedNavOrder = order; pushSettings(); }
 function loadBoardOrder() { return cachedBoardOrder; }
@@ -172,6 +177,32 @@ function deleteEntry(id) {
   render();
   db.from("entries").delete().eq("id", id).then(({ error }) => { if (error) console.error("delete failed", error); });
 }
+function updateTaskDetail(id, detail) {
+  const e = entries.find((x) => x.id === id);
+  if (!e) return;
+  e.title = detail;
+  db.from("entries").update({ title: e.title }).eq("id", id).then(({ error }) => { if (error) console.error("update failed", error); });
+}
+
+// ── task boxes (mood-board Tasks tab) ─────────────────────────────────
+const UNSORTED_BOX = "_unsorted";
+let expandedTaskIds = new Set();
+function addTaskBox() {
+  const title = prompt("New box name:");
+  if (!title || !title.trim()) return;
+  taskBoxes.push({ id: "box-" + newId(), title: title.trim() });
+  saveTaskBoxes(taskBoxes);
+  render();
+}
+function deleteTaskBox(id) {
+  taskBoxes = taskBoxes.filter((b) => b.id !== id);
+  saveTaskBoxes(taskBoxes);
+  entries.filter((e) => e.boxId === id).forEach((e) => {
+    e.boxId = null;
+    db.from("entries").update({ box_id: null }).eq("id", e.id).then(({ error }) => { if (error) console.error("update failed", error); });
+  });
+  render();
+}
 
 // ── auth / boot data flow ────────────────────────────────────────────
 async function loadAllFromServer() {
@@ -183,6 +214,7 @@ async function loadAllFromServer() {
   if (settingsErr) console.error("load settings failed", settingsErr);
   tagColors = (settingsRow && settingsRow.tag_colors && Object.keys(settingsRow.tag_colors).length) ? settingsRow.tag_colors : defaultTagColors();
   customViews = (settingsRow && settingsRow.views) || [];
+  taskBoxes = (settingsRow && settingsRow.task_boxes) || [];
   cachedNavOrder = (settingsRow && settingsRow.nav_order) || [];
   cachedBoardOrder = (settingsRow && settingsRow.board_order) || [];
   if (!settingsRow) pushSettings();
@@ -377,6 +409,42 @@ function taskListCard() {
   return card;
 }
 
+function taskRowHtml(e) {
+  const due = fmtDue(e);
+  const end = due ? `<span class="${due.cls}">${due.text}</span>` : "";
+  const expanded = expandedTaskIds.has(e.id);
+  const hasDetail = !!(e.title && e.title.trim());
+  return `<div class="taskrow">
+      <div class="row${e.done ? " done" : ""}" data-id="${e.id}">
+        <div class="box"></div><span class="txt" data-detail-toggle="${e.id}">${escapeHtml(e.body)}${hasDetail ? '<span class="detail-dot">note</span>' : ""}</span>
+        <span class="end">${end}<span class="del" data-del="${e.id}" title="delete">✕</span></span>
+      </div>
+      ${expanded ? `<div class="task-detail"><textarea data-detail-input="${e.id}" placeholder="add more detail…">${escapeHtml(e.title || "")}</textarea></div>` : ""}
+    </div>`;
+}
+
+function taskBoxCard(box, index) {
+  const isUnsorted = box.id === UNSORTED_BOX;
+  const items = entries.filter((e) => e.type === "task" && matchesFilter(e) && (isUnsorted ? !e.boxId : e.boxId === box.id))
+    .sort((a, b) => a.done - b.done);
+  if (!items.length && (isUnsorted || activeTag || searchQuery)) return null;
+  const tints = ["", "butter", "sage", "lilac", "peri"];
+  const card = makeCard(tints[index % tints.length]);
+  const closeBtn = isUnsorted ? "" : `<span class="boxclose" data-delbox="${box.id}" title="delete box">✕</span>`;
+  card.innerHTML =
+    `<div class="meta"><span>${escapeHtml(box.title)}</span>${closeBtn}</div>` +
+    items.map((e) => taskRowHtml(e)).join("") +
+    addRowHtml("add…");
+  wireRows(card);
+  wireTaskDetailInputs(card);
+  wireAddRow(card, { type: "task", tags: ["task"], boxId: isUnsorted ? null : box.id });
+  card.querySelectorAll("[data-delbox]").forEach((x) => x.addEventListener("click", (ev) => {
+    ev.stopPropagation();
+    deleteTaskBox(x.dataset.delbox);
+  }));
+  return card;
+}
+
 function owedReplyCard() {
   const items = entries.filter((e) => e.type === "reply" && matchesFilter(e))
     .sort((a, b) => a.done - b.done);
@@ -521,6 +589,14 @@ function wireRows(container) {
   container.querySelectorAll(".row").forEach((row) => {
     row.addEventListener("click", (ev) => {
       if (ev.target.dataset.del) return;
+      const detailToggle = ev.target.closest("[data-detail-toggle]");
+      if (detailToggle) {
+        const id = detailToggle.dataset.detailToggle;
+        if (expandedTaskIds.has(id)) expandedTaskIds.delete(id);
+        else expandedTaskIds.add(id);
+        render();
+        return;
+      }
       if (row.dataset.habit) toggleHabitCheckin(row.dataset.id);
       else toggleDone(row.dataset.id);
     });
@@ -530,6 +606,11 @@ function wireRows(container) {
       ev.stopPropagation();
       deleteEntry(del.dataset.del);
     });
+  });
+}
+function wireTaskDetailInputs(container) {
+  container.querySelectorAll("[data-detail-input]").forEach((ta) => {
+    ta.addEventListener("blur", () => updateTaskDetail(ta.dataset.detailInput, ta.value));
   });
 }
 function wireAddRow(container, ctx) {
@@ -573,8 +654,15 @@ function buildBoardCards() {
     const bl = bigListCard();
     if (bl) list.push({ id: "big-list", el: bl });
   } else if (activeNavId === "tasks") {
-    const tl = taskListCard();
-    if (tl) list.push({ id: "tasks", el: tl });
+    const boxes = taskBoxes.concat([{ id: UNSORTED_BOX, title: "Unsorted" }]);
+    boxes.forEach((box, i) => {
+      const bc = taskBoxCard(box, i);
+      if (bc) list.push({ id: "taskbox-" + box.id, el: bc });
+    });
+    const addBoxTile = makeCard("mini addbox");
+    addBoxTile.innerHTML = `<div class="meta"><span>+ new box</span></div>`;
+    addBoxTile.addEventListener("click", addTaskBox);
+    list.push({ id: "add-task-box", el: addBoxTile });
   } else if (activeNavId === "month") {
     list.push({ id: "calendar", el: calendarCard() });
   } else {

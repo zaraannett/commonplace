@@ -44,3 +44,8 @@ create policy "settings: owner read/write" on settings
 
 -- realtime so edits on one device show up on another without a manual refresh
 alter publication supabase_realtime add table entries;
+
+-- Migration 2 — Task boxes (mood-board style Tasks tab). Run just these two lines
+-- in the SQL Editor; the CREATE TABLE statements above don't need to be re-run.
+alter table entries add column if not exists box_id text;
+alter table settings add column if not exists task_boxes jsonb default '[]';

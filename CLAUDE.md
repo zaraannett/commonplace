@@ -43,6 +43,20 @@ step — static files served as-is by GitHub Pages.
   one-off to-dos that don't need the tracking/aging Big List gives real todos. Deliberately kept
   out of Big List's aggregation (which only pulls `todo`/`reply`) rather than reusing `todo` with a
   flag, since the whole point was "a different bucket," not a filtered view of the same one.
+  Has its own fixed nav tab, same pattern as Big List/Notes/etc.
+- **Task boxes** (the Tasks tab specifically, not the Everything card): a "mood board" style view —
+  several manually-named boxes (`settings.task_boxes`, `{id, title}`), each a mini checklist you
+  add rows to directly. A task's `boxId` (db column `box_id`, migration 2 in
+  `supabase-schema.sql`) places it in a box; unboxed tasks land in an always-present "Unsorted"
+  box that can't be deleted. Boxes get varied tints (plain/butter/sage/lilac/peri cycling by
+  position) via the existing masonry pack for visual variety — this is the "packed shuffled grid"
+  choice, not true freeform drag-anywhere placement, which was considered and deliberately deferred
+  as a much bigger build (position storage, drag-anywhere vs. reorder, resize handles). Click a
+  task's text (not its checkbox) to expand a Caveat-handwriting post-it-styled panel underneath it
+  for a longer note — this reuses the entry's existing `title` field (otherwise unused on tasks) so
+  it needed zero new entry columns, just the `box_id` one. The Everything board's Tasks card is
+  untouched by any of this — same flat, all-boxes-merged checklist as before, by design ("simplify
+  the full detail down for Everything, don't change Everything's look").
 - Tags shown *on* cards (not just the header chips) are clickable and filter the board the same
   way — `tagSpan()` helper + one delegated click listener on `#board` for any `[data-tag]`.
   Header chips intentionally list every registered tag color even before it's used on an entry
