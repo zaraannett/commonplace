@@ -553,7 +553,7 @@ function pinnedCards() {
   });
 }
 
-function calendarCard() {
+function calendarCard(large) {
   const now = new Date();
   const y = now.getFullYear(), m = now.getMonth();
   const first = new Date(y, m, 1);
@@ -587,7 +587,7 @@ function calendarCard() {
     ).join("") + "</tr>";
   }
 
-  const card = makeCard("graph");
+  const card = makeCard("graph" + (large ? " wide big-cal" : ""));
   card.innerHTML =
     `<div class="meta"><span>${monthName}</span><span class="tags"><span class="tag peri">#calendar</span></span></div>` +
     `<table class="cal"><tr><th>S</th><th>M</th><th>T</th><th>W</th><th>T</th><th>F</th><th>S</th></tr>${rows}</table>`;
@@ -697,7 +697,7 @@ function buildBoardCards() {
     addBoxTile.addEventListener("click", addTaskBox);
     list.push({ id: "add-task-box", el: addBoxTile });
   } else if (activeNavId === "month") {
-    list.push({ id: "calendar", el: calendarCard() });
+    list.push({ id: "calendar", el: calendarCard(true) });
   } else {
     list.push({ id: "coming-up", el: comingUpCard() });
     const bl = bigListCard();
