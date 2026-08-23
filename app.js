@@ -180,9 +180,9 @@ function deleteEntry(id) {
 function updateTaskDetail(id, detail) {
   const e = entries.find((x) => x.id === id);
   if (!e) return;
-  const before = e.title;
   e.title = detail;
-  if (before.trim() !== detail.trim()) render();
+  expandedTaskIds.delete(id);
+  render();
   db.from("entries").update({ title: e.title }).eq("id", id).then(({ error }) => { if (error) console.error("update failed", error); });
 }
 
@@ -427,14 +427,28 @@ function taskRowHtml(e) {
     </div>`;
 }
 
+function bulletListHtml(text) {
+  const lines = (text || "").split("\n").map((l) => l.trim()).filter(Boolean);
+  if (!lines.length) return `<p class="postit-empty">click to jot bullet points…</p>`;
+  return `<ul class="postit-bullets">` + lines.map((l) => `<li>${escapeHtml(l)}</li>`).join("") + `</ul>`;
+}
 function taskDetailCard(e) {
   const card = makeCard("postit");
+  const editing = expandedTaskIds.has(e.id);
   card.innerHTML =
     `<div class="meta"><span>Task</span><span class="boxclose" data-del="${e.id}" title="delete">✕</span></div>` +
     `<div class="row${e.done ? " done" : ""}" data-id="${e.id}"><div class="box"></div><span class="txt">${escapeHtml(e.body)}</span></div>` +
-    `<textarea class="postit-editor" data-detail-input="${e.id}" placeholder="note…">${escapeHtml(e.title || "")}</textarea>`;
+    (editing
+      ? `<textarea class="postit-editor" data-detail-input="${e.id}" placeholder="– one point per line…">${escapeHtml(e.title || "")}</textarea>`
+      : `<div class="postit-bullets-wrap" data-detail-toggle="${e.id}">${bulletListHtml(e.title)}</div>`);
   wireRows(card);
   wireTaskDetailInputs(card);
+  card.querySelectorAll("[data-detail-toggle]").forEach((el) => el.addEventListener("click", () => {
+    expandedTaskIds.add(e.id);
+    render();
+  }));
+  const ta = card.querySelector("textarea[data-detail-input]");
+  if (ta) requestAnimationFrame(() => ta.focus());
   return card;
 }
 
