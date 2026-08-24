@@ -19,6 +19,43 @@ const corsHeaders = {
   "Content-Type": "application/json",
 };
 
+function decodeEntities(s: string): string {
+  return s
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#0?39;/g, "'")
+    .trim();
+}
+
+async function fetchPageTitle(url: string): Promise<string | null> {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    const resp = await fetch(url, {
+      signal: controller.signal,
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; CommonplaceBot/1.0)" },
+    });
+    clearTimeout(timeout);
+    if (!resp.ok) return null;
+    const html = await resp.text();
+    const match = html.match(/<title[^>]*>([^<]*)<\/title>/i);
+    return match ? decodeEntities(match[1]) : null;
+  } catch {
+    return null;
+  }
+}
+
+function looksLikeUrl(s: string): boolean {
+  try {
+    const u = new URL(s);
+    return u.protocol === "http:" || u.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -43,14 +80,21 @@ Deno.serve(async (req) => {
   const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
   const id = "e" + Date.now() + Math.floor(Math.random() * 1000);
 
+  const isUrl = looksLikeUrl(text);
+  let title = "";
+  if (isUrl) {
+    title = (await fetchPageTitle(text)) || "";
+  }
+  const tags = isUrl ? ["shared", "link"] : ["shared"];
+
   const { error } = await supabase.from("entries").insert({
     id,
     user_id: OWNER_USER_ID,
     created_at: new Date().toISOString(),
     type: "note",
-    title: "",
+    title,
     body: text,
-    tags: ["shared"],
+    tags,
     due_at: null,
     done: false,
     done_at: null,

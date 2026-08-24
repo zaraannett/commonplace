@@ -524,6 +524,14 @@ function diaryCards() {
   });
 }
 
+function isUrlLike(s) {
+  try {
+    const u = new URL(String(s).trim());
+    return u.protocol === "http:" || u.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
 function noteCards() {
   return entries.filter((e) => e.type === "note" && matchesFilter(e)).map((e) => {
     const primary = e.tags[0];
@@ -534,10 +542,13 @@ function noteCards() {
     const date = new Date(e.createdAt);
     const dateStr = date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
     const tagsHtml = e.tags.map((t) => tagSpan(t)).join(" ");
+    const bodyHtml = isUrlLike(e.body)
+      ? `<a class="note-link" href="${escapeHtml(e.body)}" target="_blank" rel="noopener noreferrer">${escapeHtml(e.body)} ↗</a>`
+      : escapeHtml(e.body).replace(/\n/g, "<br>");
     card.innerHTML =
       `<div class="meta"><span>${dateStr}</span><span class="tags">${tagsHtml}<span class="boxclose" data-del="${e.id}" title="delete">✕</span></span></div>` +
       (e.title ? `<h2>${escapeHtml(e.title)}</h2>` : "") +
-      `<p>${escapeHtml(e.body).replace(/\n/g, "<br>")}</p>`;
+      `<p>${bodyHtml}</p>`;
     card.querySelectorAll("[data-del]").forEach((x) => x.addEventListener("click", (ev) => {
       ev.stopPropagation();
       deleteEntry(x.dataset.del);
