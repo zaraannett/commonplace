@@ -513,9 +513,13 @@ function diaryCards() {
     const date = new Date(e.createdAt);
     const dateStr = date.toLocaleDateString("en-US", { month: "short", day: "numeric" }) + " · " + date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
     card.innerHTML =
-      `<div class="meta"><span>${dateStr}</span><span class="tags">${tagSpan("diary")}</span></div>` +
+      `<div class="meta"><span>${dateStr}</span><span class="tags">${tagSpan("diary")}<span class="boxclose" data-del="${e.id}" title="delete">✕</span></span></div>` +
       (e.title ? `<h2>${escapeHtml(e.title)}</h2>` : "") +
       `<p>${escapeHtml(e.body)}</p>`;
+    card.querySelectorAll("[data-del]").forEach((x) => x.addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      deleteEntry(x.dataset.del);
+    }));
     return card;
   });
 }
@@ -531,9 +535,13 @@ function noteCards() {
     const dateStr = date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
     const tagsHtml = e.tags.map((t) => tagSpan(t)).join(" ");
     card.innerHTML =
-      `<div class="meta"><span>${dateStr}</span><span class="tags">${tagsHtml}</span></div>` +
+      `<div class="meta"><span>${dateStr}</span><span class="tags">${tagsHtml}<span class="boxclose" data-del="${e.id}" title="delete">✕</span></span></div>` +
       (e.title ? `<h2>${escapeHtml(e.title)}</h2>` : "") +
       `<p>${escapeHtml(e.body).replace(/\n/g, "<br>")}</p>`;
+    card.querySelectorAll("[data-del]").forEach((x) => x.addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      deleteEntry(x.dataset.del);
+    }));
     return card;
   });
 }
