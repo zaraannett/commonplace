@@ -106,5 +106,5 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders });
   }
 
-  return new Response(JSON.stringify({ ok: true, id }), { status: 200, headers: corsHeaders });
+  return new Response(JSON.stringify({ ok: true, id, title, isUrl }), { status: 200, headers: corsHeaders });
 });
