@@ -76,14 +76,14 @@ function toDbRow(e) {
     title: e.title, body: e.body, tags: e.tags, due_at: e.dueAt,
     done: e.done, done_at: e.doneAt, pinned: e.pinned, source: e.source,
     weekly_target: e.weeklyTarget ?? null, checkins: e.checkins ?? null,
-    box_id: e.boxId ?? null,
+    box_id: e.boxId ?? null, image_url: e.imageUrl ?? null,
   };
 }
 function fromDbRow(r) {
   const e = {
     id: r.id, createdAt: r.created_at, type: r.type, title: r.title || "", body: r.body || "",
     tags: r.tags || [], dueAt: r.due_at, done: r.done, doneAt: r.done_at, pinned: r.pinned,
-    boxId: r.box_id || null,
+    boxId: r.box_id || null, imageUrl: r.image_url || null,
     source: r.source || "manual",
   };
   if (r.weekly_target != null) e.weeklyTarget = r.weekly_target;
@@ -536,7 +536,7 @@ function noteCards() {
   return entries.filter((e) => e.type === "note" && matchesFilter(e)).map((e) => {
     const primary = e.tags[0];
     const tint = ["sage", "lilac", "butter"].includes(primary) ? primary : "";
-    const mini = !e.title && e.body.length < 90;
+    const mini = !e.title && e.body.length < 90 && !e.imageUrl;
     const card = makeCard([tint, mini ? "mini" : ""].filter(Boolean).join(" "));
     card.dataset.entryId = e.id;
     const date = new Date(e.createdAt);
@@ -545,8 +545,12 @@ function noteCards() {
     const bodyHtml = isUrlLike(e.body)
       ? `<a class="note-link" href="${escapeHtml(e.body)}" target="_blank" rel="noopener noreferrer">${escapeHtml(e.body)} ↗</a>`
       : escapeHtml(e.body).replace(/\n/g, "<br>");
+    const thumbHtml = e.imageUrl
+      ? `<a href="${escapeHtml(e.body)}" target="_blank" rel="noopener noreferrer"><img class="note-thumb" src="${escapeHtml(e.imageUrl)}" alt="" loading="lazy" onerror="this.remove()"></a>`
+      : "";
     card.innerHTML =
       `<div class="meta"><span>${dateStr}</span><span class="tags">${tagsHtml}<span class="boxclose" data-del="${e.id}" title="delete">✕</span></span></div>` +
+      thumbHtml +
       (e.title ? `<h2>${escapeHtml(e.title)}</h2>` : "") +
       `<p>${bodyHtml}</p>`;
     card.querySelectorAll("[data-del]").forEach((x) => x.addEventListener("click", (ev) => {

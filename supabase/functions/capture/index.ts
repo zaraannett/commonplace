@@ -29,21 +29,52 @@ function decodeEntities(s: string): string {
     .trim();
 }
 
-async function fetchPageTitle(url: string): Promise<string | null> {
+// Pulls every <meta property="..."/name="..." content="..."> tag into a lookup,
+// regardless of attribute order — real-world pages write these inconsistently.
+function extractMetaTags(html: string): Record<string, string> {
+  const metas: Record<string, string> = {};
+  const tags = html.match(/<meta\b[^>]*>/gi) || [];
+  for (const tag of tags) {
+    const propMatch = tag.match(/(?:property|name)\s*=\s*["']([^"']+)["']/i);
+    const contentMatch = tag.match(/content\s*=\s*["']([^"']*)["']/i);
+    if (propMatch && contentMatch) {
+      metas[propMatch[1].toLowerCase()] = contentMatch[1];
+    }
+  }
+  return metas;
+}
+
+async function fetchPageMeta(url: string): Promise<{ title: string | null; imageUrl: string | null }> {
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 5000);
+    const timeout = setTimeout(() => controller.abort(), 6000);
     const resp = await fetch(url, {
       signal: controller.signal,
       headers: { "User-Agent": "Mozilla/5.0 (compatible; CommonplaceBot/1.0)" },
     });
     clearTimeout(timeout);
-    if (!resp.ok) return null;
+    if (!resp.ok) return { title: null, imageUrl: null };
+
     const html = await resp.text();
-    const match = html.match(/<title[^>]*>([^<]*)<\/title>/i);
-    return match ? decodeEntities(match[1]) : null;
+    const metas = extractMetaTags(html);
+    const titleTagMatch = html.match(/<title[^>]*>([^<]*)<\/title>/i);
+
+    const rawTitle = metas["og:title"] || metas["twitter:title"] || (titleTagMatch ? titleTagMatch[1] : null);
+    const title = rawTitle ? decodeEntities(rawTitle) : null;
+
+    let imageUrl = metas["og:image"] || metas["og:image:url"] || metas["twitter:image"] || null;
+    if (imageUrl) imageUrl = decodeEntities(imageUrl);
+    if (imageUrl) {
+      try {
+        imageUrl = new URL(imageUrl, url).href; // resolve relative image paths against the page URL
+      } catch {
+        // leave as-is if it doesn't parse; the <img> will just fail to load
+      }
+    }
+
+    return { title, imageUrl };
   } catch {
-    return null;
+    return { title: null, imageUrl: null };
   }
 }
 
@@ -82,8 +113,11 @@ Deno.serve(async (req) => {
 
   const isUrl = looksLikeUrl(text);
   let title = "";
+  let imageUrl: string | null = null;
   if (isUrl) {
-    title = (await fetchPageTitle(text)) || "";
+    const meta = await fetchPageMeta(text);
+    title = meta.title || "";
+    imageUrl = meta.imageUrl;
   }
   const tags = isUrl ? ["shared", "link"] : ["shared"];
 
@@ -95,6 +129,7 @@ Deno.serve(async (req) => {
     title,
     body: text,
     tags,
+    image_url: imageUrl,
     due_at: null,
     done: false,
     done_at: null,
@@ -106,5 +141,5 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders });
   }
 
-  return new Response(JSON.stringify({ ok: true, id, title, isUrl }), { status: 200, headers: corsHeaders });
+  return new Response(JSON.stringify({ ok: true, id, title, imageUrl, isUrl }), { status: 200, headers: corsHeaders });
 });

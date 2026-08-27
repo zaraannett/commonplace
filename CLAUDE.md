@@ -111,6 +111,36 @@ step — static files served as-is by GitHub Pages.
 - The mockup's "This week" pinned card (a curated multi-item list) is simplified to: any single
   todo/reply entry with `pinned: true` gets its own small pinned card.
 
+### PWA (done)
+`manifest.json` + `icon-*.png` + `sw.js` — see the earlier note near the file list. Installable
+on the home screen, opens standalone (no browser chrome).
+
+### Share-sheet capture (done)
+iOS can't register a PWA as a native Share Sheet target (that's Android-only, via the Web Share
+Target API), so this is a small **iOS Shortcut + Supabase Edge Function** pair instead:
+- `supabase/functions/capture/index.ts` — deployed via the Supabase dashboard's function editor
+  (pasted in directly, not the CLI). Single-user auth model: the Shortcut sends a long random
+  `CAPTURE_SECRET` in the JSON body that only it and this function know; that secret is the only
+  gate on the insert, which then runs with the service-role key (auto-injected into every Edge
+  Function by Supabase, never exposed to the client/Shortcut). `OWNER_USER_ID` (a hardcoded UUID,
+  since there's only ever one user) and the secret are both set as Function Secrets in the
+  dashboard, not in code.
+- When the shared text is a URL, the function fetches the page server-side and pulls `og:title`/
+  `<title>` and `og:image` (falling back to `twitter:title`/`twitter:image`) to populate the
+  entry's `title` and new `image_url` column — so a shared link lands looking like a real link
+  preview card (thumbnail + heading), not a bare URL. Tagged `#shared` always, plus `#link` when
+  it's a URL. Some sites (Google search results, anything behind bot protection) will fail the
+  server-side fetch and fall back to a bare link — that's the site blocking it, not a bug here.
+- The iOS Shortcut itself ("Add to Commonplace") lives only on the phone, not in this repo —
+  it's a **Get Contents of URL** action (POST, JSON body with `text` = the Shortcut Input
+  variable and `secret` = the same secret, header `Authorization: Bearer <anon key>`), with
+  "Show in Share Sheet" enabled in its Details.
+- Client-side (`app.js`/`style.css`): any note whose `body` is a URL renders as an actual
+  clickable link (`.note-link`); any note with `image_url` set shows a thumbnail above the title
+  (`.note-thumb`, filtered `saturate(.82) sepia(.06)` to sit better against the app's desaturated
+  paper palette rather than a jarring full-color photo — worth revisiting if that reads as muddy
+  rather than harmonious).
+
 ## Next phases (see spec + conversation)
 - AI auto-tagging (Gemini) so capture doesn't require picking type/tags by hand.
 - Real Day view (needs a time field added to the schema).
@@ -118,7 +148,4 @@ step — static files served as-is by GitHub Pages.
   two-way push, to avoid risk of writing bad data into the real calendar. Needs a Google Cloud
   Console project + OAuth credentials (same kind of one-time setup as Supabase was).
 - Possible later phase: Gmail triage (auto-surface emails that need a reply) — floated as an
-  option, not committed to yet. Texts/SMS are a dead end (Apple doesn't allow third-party Messages
-  access); the iOS share-sheet capture flow (still not built) is the intended path for "share one
-  important text in when it's worth tracking."
-- PWA installability (manifest, add-to-homescreen) not yet done.
+  option, not committed to yet.

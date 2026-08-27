@@ -49,3 +49,6 @@ alter publication supabase_realtime add table entries;
 -- in the SQL Editor; the CREATE TABLE statements above don't need to be re-run.
 alter table entries add column if not exists box_id text;
 alter table settings add column if not exists task_boxes jsonb default '[]';
+
+-- Migration 3 — link-preview image for shared links. Run this one line.
+alter table entries add column if not exists image_url text;
