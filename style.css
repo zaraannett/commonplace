@@ -283,6 +283,23 @@ canvas#band{display:block;width:100%;height:32px;margin-top:16px;border-radius:2
 .card.addbox:hover{border-color:var(--soft);}
 
 .card.diary p{font-family:'Newsreader',serif;font-size:15.5px;line-height:1.5;}
+
+/* ── handwriting (Apple Pencil / touch ink, diary + task post-its) ─── */
+.sketchpad-wrap{margin-top:8px;}
+.sketchpad{
+  display:block;width:100%;height:220px;border:1px dashed var(--line);border-radius:2px;
+  background:rgba(255,255,255,.5);touch-action:none;cursor:crosshair;
+}
+.card.postit .sketchpad{height:150px;background:rgba(255,255,255,.55);border-color:rgba(40,35,28,.18);}
+.sketch-toolbar{display:flex;gap:14px;margin-top:7px;}
+.sketch-btn{
+  background:none;border:none;padding:0;color:var(--soft);cursor:pointer;
+  font-family:'Courier Prime',monospace;font-size:11px;letter-spacing:.03em;
+}
+.sketch-btn:hover{color:var(--ink);}
+.sketch-btn.mode-switch{display:block;margin-top:8px;}
+.sketch-view{display:block;width:100%;height:auto;max-height:260px;}
+.card.postit .sketch-view{max-height:170px;}
 .scribble{font-family:'Caveat',cursive;font-size:20px;line-height:1.45;}
 
 .cal{width:100%;border-collapse:collapse;table-layout:fixed;margin-top:4px;}

@@ -76,14 +76,14 @@ function toDbRow(e) {
     title: e.title, body: e.body, tags: e.tags, due_at: e.dueAt,
     done: e.done, done_at: e.doneAt, pinned: e.pinned, source: e.source,
     weekly_target: e.weeklyTarget ?? null, checkins: e.checkins ?? null,
-    box_id: e.boxId ?? null, image_url: e.imageUrl ?? null,
+    box_id: e.boxId ?? null, image_url: e.imageUrl ?? null, drawing: e.drawing ?? null,
   };
 }
 function fromDbRow(r) {
   const e = {
     id: r.id, createdAt: r.created_at, type: r.type, title: r.title || "", body: r.body || "",
     tags: r.tags || [], dueAt: r.due_at, done: r.done, doneAt: r.done_at, pinned: r.pinned,
-    boxId: r.box_id || null, imageUrl: r.image_url || null,
+    boxId: r.box_id || null, imageUrl: r.image_url || null, drawing: r.drawing || null,
     source: r.source || "manual",
   };
   if (r.weekly_target != null) e.weeklyTarget = r.weekly_target;
@@ -186,9 +186,30 @@ function updateTaskDetail(id, detail) {
   db.from("entries").update({ title: e.title }).eq("id", id).then(({ error }) => { if (error) console.error("update failed", error); });
 }
 
+// A sketch autosaves after every completed stroke (not on blur, since a canvas has no blur) —
+// deliberately does NOT call render(), so the live canvas element isn't torn down and rebuilt
+// mid-drawing-session; see anySketchEditingOpen() for the matching realtime-render guard.
+const drawingSaveTimers = {};
+function updateEntryDrawing(id, drawing) {
+  const e = entries.find((x) => x.id === id);
+  if (!e) return;
+  e.drawing = drawing;
+  clearTimeout(drawingSaveTimers[id]);
+  drawingSaveTimers[id] = setTimeout(() => {
+    db.from("entries").update({ drawing: e.drawing }).eq("id", id).then(({ error }) => { if (error) console.error("update failed", error); });
+  }, 500);
+}
+
 // ── task boxes (mood-board Tasks tab) ─────────────────────────────────
 const UNSORTED_BOX = "_unsorted";
 let expandedTaskIds = new Set();
+let sketchModeTaskIds = new Set(); // of expandedTaskIds, which are showing the canvas instead of the bullet textarea
+let editingSketchIds = new Set(); // diary entries currently showing their canvas
+function anySketchEditingOpen() {
+  if (editingSketchIds.size) return true;
+  for (const id of sketchModeTaskIds) if (expandedTaskIds.has(id)) return true;
+  return false;
+}
 function addTaskBox() {
   const title = prompt("New box name:");
   if (!title || !title.trim()) return;
@@ -228,7 +249,10 @@ function subscribeRealtime() {
     .on("postgres_changes", { event: "*", schema: "public", table: "entries", filter: `user_id=eq.${currentUser.id}` }, async () => {
       const { data: rows } = await db.from("entries").select("*").eq("user_id", currentUser.id);
       entries = (rows || []).map(fromDbRow);
-      render();
+      // Our own drawing autosaves land here too (they're just more writes to this table) — skip
+      // the rebuild while a sketch canvas is open so it doesn't get torn down mid-stroke every
+      // ~500ms. entries[] is still kept fresh; the final ink shows once editing is closed.
+      if (!anySketchEditingOpen()) render();
     })
     .subscribe();
 }
@@ -414,7 +438,7 @@ function taskListCard() {
 }
 
 function hasTaskDetail(e) {
-  return !!(e.title && e.title.trim());
+  return !!(e.title && e.title.trim()) || hasInk(e);
 }
 function taskRowHtml(e) {
   const due = fmtDue(e);
@@ -437,18 +461,53 @@ function bulletListHtml(text) {
 function taskDetailCard(e) {
   const card = makeCard("postit");
   const editing = expandedTaskIds.has(e.id);
+  // Default to sketch mode when reopening a task whose only content is ink (no bullet text yet).
+  const sketching = editing && (sketchModeTaskIds.has(e.id) || (hasInk(e) && !(e.title && e.title.trim())));
+  let detail;
+  if (editing && sketching) {
+    detail = `<div class="sketchpad-wrap"><canvas class="sketchpad small" data-sketch="${e.id}"></canvas>
+      <div class="sketch-toolbar">
+        <button type="button" class="sketch-btn" data-sketch-undo="${e.id}">undo</button>
+        <button type="button" class="sketch-btn" data-sketch-clear="${e.id}">clear</button>
+        <button type="button" class="sketch-btn" data-mode-toggle="${e.id}">Aa type instead</button>
+        <button type="button" class="sketch-btn" data-sketch-done="${e.id}">done</button>
+      </div></div>`;
+  } else if (editing) {
+    detail = `<textarea class="postit-editor" data-detail-input="${e.id}" placeholder="– one point per line…">${escapeHtml(e.title || "")}</textarea>
+      <button type="button" class="sketch-btn mode-switch" data-mode-toggle="${e.id}">✎ draw instead</button>`;
+  } else if (hasInk(e)) {
+    detail = `<div class="postit-bullets-wrap" data-detail-toggle="${e.id}">${sketchSvg(e.drawing, "sketch-view")}</div>`;
+  } else {
+    detail = `<div class="postit-bullets-wrap" data-detail-toggle="${e.id}">${bulletListHtml(e.title)}</div>`;
+  }
   card.innerHTML =
     `<div class="meta"><span>Task</span><span class="boxclose" data-del="${e.id}" title="delete">✕</span></div>` +
     `<div class="row${e.done ? " done" : ""}" data-id="${e.id}"><div class="box"></div><span class="txt">${escapeHtml(e.body)}</span></div>` +
-    (editing
-      ? `<textarea class="postit-editor" data-detail-input="${e.id}" placeholder="– one point per line…">${escapeHtml(e.title || "")}</textarea>`
-      : `<div class="postit-bullets-wrap" data-detail-toggle="${e.id}">${bulletListHtml(e.title)}</div>`);
+    detail;
   wireRows(card);
   wireTaskDetailInputs(card);
   card.querySelectorAll("[data-detail-toggle]").forEach((el) => el.addEventListener("click", () => {
     expandedTaskIds.add(e.id);
     render();
   }));
+  card.querySelectorAll("[data-mode-toggle]").forEach((el) => el.addEventListener("click", (ev) => {
+    ev.stopPropagation();
+    if (sketchModeTaskIds.has(e.id)) sketchModeTaskIds.delete(e.id);
+    else { sketchModeTaskIds.add(e.id); if (!e.drawing) e.drawing = { w: 0, h: 0, strokes: [] }; }
+    render();
+  }));
+  card.querySelectorAll("[data-sketch-done]").forEach((el) => el.addEventListener("click", (ev) => {
+    ev.stopPropagation();
+    expandedTaskIds.delete(e.id);
+    sketchModeTaskIds.delete(e.id);
+    render();
+  }));
+  if (editing && sketching) {
+    const canvas = card.querySelector("canvas.sketchpad");
+    const ctl = initSketchpad(canvas, e.drawing, (d) => updateEntryDrawing(e.id, d));
+    card.querySelector("[data-sketch-undo]").addEventListener("click", (ev) => { ev.stopPropagation(); ctl.undo(); });
+    card.querySelector("[data-sketch-clear]").addEventListener("click", (ev) => { ev.stopPropagation(); ctl.clear(); });
+  }
   const ta = card.querySelector("textarea[data-detail-input]");
   if (ta) requestAnimationFrame(() => ta.focus());
   return card;
@@ -512,16 +571,179 @@ function diaryCards() {
     card.dataset.entryId = e.id;
     const date = new Date(e.createdAt);
     const dateStr = date.toLocaleDateString("en-US", { month: "short", day: "numeric" }) + " · " + date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+    const sketching = editingSketchIds.has(e.id);
+    let body;
+    if (sketching) {
+      body = `<div class="sketchpad-wrap"><canvas class="sketchpad" data-sketch="${e.id}"></canvas>
+        <div class="sketch-toolbar">
+          <button type="button" class="sketch-btn" data-sketch-undo="${e.id}">undo</button>
+          <button type="button" class="sketch-btn" data-sketch-clear="${e.id}">clear</button>
+          <button type="button" class="sketch-btn" data-sketch-done="${e.id}">done</button>
+        </div></div>`;
+    } else if (hasInk(e)) {
+      body = sketchSvg(e.drawing, "sketch-view");
+    } else {
+      body = `<p>${escapeHtml(e.body)}</p>`;
+    }
     card.innerHTML =
-      `<div class="meta"><span>${dateStr}</span><span class="tags">${tagSpan("diary")}<span class="boxclose" data-del="${e.id}" title="delete">✕</span></span></div>` +
+      `<div class="meta"><span>${dateStr}</span><span class="tags">${tagSpan("diary")}` +
+      `<span class="boxclose" data-sketch-toggle="${e.id}" title="${sketching ? "cancel drawing" : "draw"}">${sketching ? "Aa" : "✎"}</span>` +
+      `<span class="boxclose" data-del="${e.id}" title="delete">✕</span></span></div>` +
       (e.title ? `<h2>${escapeHtml(e.title)}</h2>` : "") +
-      `<p>${escapeHtml(e.body)}</p>`;
+      body;
     card.querySelectorAll("[data-del]").forEach((x) => x.addEventListener("click", (ev) => {
       ev.stopPropagation();
       deleteEntry(x.dataset.del);
     }));
+    card.querySelectorAll("[data-sketch-toggle]").forEach((x) => x.addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      if (editingSketchIds.has(e.id)) editingSketchIds.delete(e.id);
+      else { editingSketchIds.add(e.id); if (!e.drawing) e.drawing = { w: 0, h: 0, strokes: [] }; }
+      render();
+    }));
+    card.querySelectorAll("[data-sketch-done]").forEach((x) => x.addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      editingSketchIds.delete(e.id);
+      render();
+    }));
+    if (sketching) {
+      const canvas = card.querySelector("canvas.sketchpad");
+      const ctl = initSketchpad(canvas, e.drawing, (d) => updateEntryDrawing(e.id, d));
+      card.querySelector("[data-sketch-undo]").addEventListener("click", (ev) => { ev.stopPropagation(); ctl.undo(); });
+      card.querySelector("[data-sketch-clear]").addEventListener("click", (ev) => { ev.stopPropagation(); ctl.clear(); });
+    }
     return card;
   });
+}
+
+// ── handwriting (Apple Pencil / touch ink, via perfect-freehand) ─────
+// Loaded as a dynamic import (works fine from a plain script, no <script type=module> needed).
+// Until it resolves, strokes fall back to a plain thin polyline so drawing still works.
+let getStroke = null;
+import("https://esm.sh/perfect-freehand").then((m) => { getStroke = m.default; }).catch((err) => console.error("perfect-freehand failed to load", err));
+
+const INK_COLOR = (getComputedStyle(document.documentElement).getPropertyValue("--ink") || "#28231C").trim() || "#28231C";
+const STROKE_OPTS = { size: 3.2, thinning: 0.65, smoothing: 0.55, streamline: 0.55 };
+
+// Standard perfect-freehand helper (from its own docs): turns the polygon outline getStroke()
+// returns into a smoothed SVG path string.
+function svgPathFromOutline(points) {
+  if (!points.length) return "";
+  const d = points.reduce(
+    (acc, [x0, y0], i, arr) => {
+      const [x1, y1] = arr[(i + 1) % arr.length];
+      acc.push(x0, y0, (x0 + x1) / 2, (y0 + y1) / 2);
+      return acc;
+    },
+    ["M", ...points[0], "Q"]
+  );
+  d.push("Z");
+  return d.join(" ");
+}
+function strokeToPath(points) {
+  if (!points || points.length < 2) return "";
+  if (getStroke) {
+    // Real per-point pressure only comes from an Apple Pencil; mouse/touch points are all
+    // recorded at a constant 0.5 (see localPoint below), so simulate a natural taper for those
+    // instead of drawing a uniform-width line.
+    const simulatePressure = !points.some((p) => p[2] !== 0.5);
+    return svgPathFromOutline(getStroke(points, Object.assign({ simulatePressure }, STROKE_OPTS)));
+  }
+  return "M " + points.map((p) => p[0] + " " + p[1]).join(" L ");
+}
+function sketchSvg(drawing, cls) {
+  if (!drawing || !drawing.strokes || !drawing.strokes.length) return "";
+  const paths = drawing.strokes.map((pts) => {
+    const d = strokeToPath(pts);
+    if (!d) return "";
+    return getStroke
+      ? `<path d="${d}" fill="${INK_COLOR}"/>`
+      : `<path d="${d}" fill="none" stroke="${INK_COLOR}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>`;
+  }).join("");
+  return `<svg class="${cls}" viewBox="0 0 ${drawing.w || 300} ${drawing.h || 200}" preserveAspectRatio="xMidYMin meet">${paths}</svg>`;
+}
+function hasInk(e) {
+  return !!(e.drawing && e.drawing.strokes && e.drawing.strokes.length);
+}
+
+// Wires pointer events onto a blank canvas for freehand drawing. Palm rejection is simple but
+// effective: while one pointer is actively drawing, any second pointer (a resting palm) is
+// ignored outright, and a stray touch right after the pencil lifts is ignored for half a second.
+function initSketchpad(canvas, drawing, onChange) {
+  drawing = drawing || { w: 0, h: 0, strokes: [] };
+  const ctx = canvas.getContext("2d");
+  let strokes = (drawing.strokes || []).map((s) => s.slice());
+  let current = null;
+  let activePointerId = null;
+  let lastPenUpAt = 0;
+
+  function resize() {
+    const rect = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    drawing.w = rect.width;
+    drawing.h = rect.height;
+    redraw();
+  }
+  function redraw() {
+    const rect = canvas.getBoundingClientRect();
+    ctx.clearRect(0, 0, rect.width, rect.height);
+    ctx.fillStyle = INK_COLOR;
+    ctx.strokeStyle = INK_COLOR;
+    (current ? strokes.concat([current]) : strokes).forEach((pts) => {
+      if (pts.length < 2) return;
+      if (getStroke) {
+        const d = strokeToPath(pts);
+        if (d) ctx.fill(new Path2D(d));
+      } else {
+        ctx.beginPath();
+        pts.forEach((p, i) => (i === 0 ? ctx.moveTo(p[0], p[1]) : ctx.lineTo(p[0], p[1])));
+        ctx.lineWidth = 2.2; ctx.lineCap = "round"; ctx.lineJoin = "round";
+        ctx.stroke();
+      }
+    });
+  }
+  function localPoint(e) {
+    const rect = canvas.getBoundingClientRect();
+    const pressure = e.pointerType === "pen" && e.pressure > 0 ? e.pressure : 0.5;
+    return [e.clientX - rect.left, e.clientY - rect.top, pressure];
+  }
+  function down(e) {
+    if (activePointerId !== null) return;
+    if (e.pointerType === "touch" && Date.now() - lastPenUpAt < 500) return;
+    activePointerId = e.pointerId;
+    try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
+    current = [localPoint(e)];
+    redraw();
+    e.preventDefault();
+  }
+  function move(e) {
+    if (e.pointerId !== activePointerId || !current) return;
+    current.push(localPoint(e));
+    redraw();
+    e.preventDefault();
+  }
+  function up(e) {
+    if (e.pointerId !== activePointerId) return;
+    if (e.pointerType === "pen") lastPenUpAt = Date.now();
+    if (current && current.length > 1) strokes.push(current);
+    current = null;
+    activePointerId = null;
+    redraw();
+    drawing.strokes = strokes;
+    onChange(drawing);
+  }
+  canvas.addEventListener("pointerdown", down);
+  canvas.addEventListener("pointermove", move);
+  canvas.addEventListener("pointerup", up);
+  canvas.addEventListener("pointercancel", up);
+  resize();
+  return {
+    undo() { strokes.pop(); redraw(); drawing.strokes = strokes; onChange(drawing); },
+    clear() { strokes = []; redraw(); drawing.strokes = strokes; onChange(drawing); },
+  };
 }
 
 function isUrlLike(s) {
@@ -701,6 +923,14 @@ function buildBoardCards() {
     noteCards().forEach((c) => list.push({ id: "note-" + c.dataset.entryId, el: c }));
   } else if (activeNavId === "diary") {
     diaryCards().forEach((c) => list.push({ id: "diary-" + c.dataset.entryId, el: c }));
+    const addSketchTile = makeCard("mini addbox");
+    addSketchTile.innerHTML = `<div class="meta"><span>+ new sketch</span></div>`;
+    addSketchTile.addEventListener("click", () => {
+      const e = addEntry({ type: "diary", drawing: { w: 0, h: 0, strokes: [] } });
+      editingSketchIds.add(e.id);
+      render();
+    });
+    list.push({ id: "add-diary-sketch", el: addSketchTile });
   } else if (activeNavId === "people") {
     const orc = owedReplyCard();
     if (orc) list.push({ id: "owe-reply", el: orc });

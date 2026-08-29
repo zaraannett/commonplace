@@ -52,3 +52,7 @@ alter table settings add column if not exists task_boxes jsonb default '[]';
 
 -- Migration 3 — link-preview image for shared links. Run this one line.
 alter table entries add column if not exists image_url text;
+
+-- Migration 4 — Apple Pencil / touch handwriting on diary entries and task post-its.
+-- Stores vector ink (stroke point arrays), not an image, so it stays crisp and small.
+alter table entries add column if not exists drawing jsonb;

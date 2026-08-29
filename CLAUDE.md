@@ -141,6 +141,40 @@ Target API), so this is a small **iOS Shortcut + Supabase Edge Function** pair i
   paper palette rather than a jarring full-color photo — worth revisiting if that reads as muddy
   rather than harmonious).
 
+### Handwriting / Apple Pencil (done)
+Diary entries and task post-its can be hand-drawn instead of typed — a "separate sketch mode"
+per entry (draw OR type, not a layer on top of text), per explicit choice over annotating-on-top.
+- **[perfect-freehand](https://github.com/steveruizok/perfect-freehand)** (loaded via a dynamic
+  `import("https://esm.sh/perfect-freehand")` inside `app.js` — works fine from a plain script,
+  no `type="module"` needed) turns raw pointer points into smoothed, pressure-tapered ink
+  outlines. `svgPathFromOutline()` is its standard documented helper for turning that outline into
+  an SVG path string. If the import hasn't resolved yet, strokes fall back to a plain polyline so
+  drawing still works immediately.
+- Ink is stored as **vector strokes**, not a photo: `entries.drawing` (jsonb, migration 4) =
+  `{ w, h, strokes: [[ [x,y,pressure], ... ], ...] }`, coordinates in CSS pixels relative to the
+  canvas at draw time. Cheap to store/sync, stays crisp at any zoom when replayed as an `<svg>`.
+- `initSketchpad(canvas, drawing, onChange)` wires Pointer Events onto a blank canvas — real
+  pressure only comes from `pointerType === "pen"` (Apple Pencil); mouse/touch points are recorded
+  at a constant pressure so `getStroke` simulates a natural taper for those instead of a
+  uniform-width line. **Palm rejection** is simple but effective: while one pointer is actively
+  drawing, a second pointer (a resting palm) is ignored outright, and a stray touch within 500ms of
+  the pencil lifting is also ignored.
+- Autosaves after every completed stroke (a canvas has no "blur" to hook like the task-note
+  textarea does) via `updateEntryDrawing()`, debounced 500ms — deliberately does **not** call
+  `render()`, so the live canvas isn't torn down mid-drawing-session. The realtime subscription
+  (which would otherwise refetch-and-render on our own autosave, too) is guarded by
+  `anySketchEditingOpen()` to skip the rebuild while any sketch is actively open; `entries[]` stays
+  fresh underneath, the final ink just doesn't render until editing is closed.
+- Diary: pencil icon on each card toggles sketch mode; a "+ new sketch" tile (Diary tab only,
+  same pattern as Tasks' "+ new box") creates a blank sketch entry and opens it immediately.
+  Task post-its: a "✎ draw instead" / "Aa type instead" toggle switches that task's detail between
+  the existing bullet-textarea and a canvas; `hasTaskDetail()` (which decides whether a task has
+  "graduated" out of its box onto its own postit) now also checks for ink, not just title text.
+- Known simplification: resizing the window/rotating the device does **not** rescale existing
+  strokes to the new canvas size (they're stored in the original canvas's pixel coordinates) —
+  same class of deliberate scope-limit as the Day view placeholder. Not expected to matter much in
+  practice since orientation is normally settled before you start drawing.
+
 ## Next phases (see spec + conversation)
 - AI auto-tagging (Gemini) so capture doesn't require picking type/tags by hand.
 - Real Day view (needs a time field added to the schema).
