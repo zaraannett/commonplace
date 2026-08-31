@@ -22,10 +22,15 @@ step — static files served as-is by GitHub Pages.
   installability. Icons are a plain italic serif "C" (Georgia, since a blank canvas can't load
   Newsreader) on the paper color, generated via a throwaway `<canvas>` script, not authored in a
   design tool — regenerate the same way if they ever need to change. `sw.js` caches only the
-  same-origin app-shell files (index.html/style.css/app.js/config.js/manifest.json) via
-  stale-while-revalidate; it explicitly bails on any cross-origin request (`url.origin !==
-  self.location.origin`) so it never touches Supabase or the CDN script — live data and realtime
-  sync are unaffected by it.
+  same-origin app-shell files (index.html/style.css/app.js/config.js/manifest.json), network-first
+  with an explicit `cache:"no-store"` on the underlying `fetch()` — without that, GitHub Pages'
+  real Cache-Control lifetimes let the browser's own HTTP cache silently satisfy the "network-first"
+  fetch without a real round-trip, which is why several fixes earlier in this build didn't show up
+  on the installed PWA right away even after being pushed. Bumping `CACHE`'s version string forces
+  a currently-installed SW to detect the update and purge its old cache on next load — do this any
+  time a fix isn't showing up and no-store alone doesn't explain it. Bails on any cross-origin
+  request (`url.origin !== self.location.origin`) so it never touches Supabase or the CDN script —
+  live data and realtime sync are unaffected by it.
 
 ### What's implemented
 - **Backend**: Supabase Postgres, not localStorage. `entries` table shaped like the spec's sketch

@@ -4,7 +4,13 @@
 // back to the cached copy if the network fails — so a code update always shows up
 // on the very next load instead of needing two reloads like a stale-while-revalidate
 // strategy would.
-const CACHE = "commonplace-shell-v2";
+//
+// The fetch() below explicitly bypasses the browser's own HTTP cache (cache:"no-store").
+// Without that, "network-first" isn't actually a hard guarantee — GitHub Pages serves these
+// files with real Cache-Control lifetimes, so a plain fetch() can be silently satisfied by the
+// browser's HTTP cache without a real round-trip, and a code update wouldn't show up even though
+// this logic looks like it's always asking the network first.
+const CACHE = "commonplace-shell-v3";
 const SHELL = ["./", "./index.html", "./style.css", "./app.js", "./config.js", "./manifest.json"];
 
 self.addEventListener("install", (event) => {
@@ -24,7 +30,7 @@ self.addEventListener("fetch", (event) => {
   if (url.origin !== self.location.origin) return;
   if (event.request.method !== "GET") return;
   event.respondWith(
-    fetch(event.request)
+    fetch(event.request, { cache: "no-store" })
       .then((resp) => {
         if (resp.ok) caches.open(CACHE).then((cache) => cache.put(event.request, resp.clone()));
         return resp;
