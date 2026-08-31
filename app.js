@@ -739,7 +739,13 @@ function initSketchpad(canvas, drawing, onChange) {
   canvas.addEventListener("pointermove", move);
   canvas.addEventListener("pointerup", up);
   canvas.addEventListener("pointercancel", up);
-  resize();
+  // initSketchpad runs while this canvas is still an in-memory element (the card it's on hasn't
+  // been appended to #board yet), so getBoundingClientRect() here would read 0x0 and lock the
+  // canvas's actual pixel dimensions at zero forever — nothing painted to it would ever be
+  // visible. Deferring to the next frame (same double-deferred pattern as packBoard()) waits
+  // until the card is actually laid out.
+  requestAnimationFrame(resize);
+  setTimeout(resize, 300);
   return {
     undo() { strokes.pop(); redraw(); drawing.strokes = strokes; onChange(drawing); },
     clear() { strokes = []; redraw(); drawing.strokes = strokes; onChange(drawing); },
