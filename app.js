@@ -812,13 +812,13 @@ function drawJitteredRing(ctx, cx, cy, r) {
       if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
     }
     ctx.closePath();
-    ctx.strokeStyle = `rgba(126,84,46,${(0.07 + Math.random() * 0.13).toFixed(2)})`;
+    ctx.strokeStyle = `rgba(163,124,84,${(0.05 + Math.random() * 0.08).toFixed(2)})`;
     ctx.lineWidth = 1.2 + Math.random() * 2.4;
     ctx.stroke();
   }
   ctx.beginPath();
   ctx.arc(cx, cy, r * 0.86, 0, Math.PI * 2);
-  ctx.fillStyle = "rgba(126,84,46,.045)";
+  ctx.fillStyle = "rgba(163,124,84,.02)";
   ctx.fill();
   const droplets = 4 + Math.floor(Math.random() * 5);
   for (let i = 0; i < droplets; i++) {
@@ -834,7 +834,7 @@ function drawJitteredRing(ctx, cx, cy, r) {
       if (j === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
     }
     ctx.closePath();
-    ctx.fillStyle = `rgba(126,84,46,${(0.12 + Math.random() * 0.16).toFixed(2)})`;
+    ctx.fillStyle = `rgba(163,124,84,${(0.06 + Math.random() * 0.08).toFixed(2)})`;
     ctx.fill();
   }
 }
