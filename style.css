@@ -275,6 +275,8 @@ canvas#band{display:block;width:100%;height:32px;margin-top:16px;border-radius:2
 .postit-empty{font-family:'Courier Prime',monospace;font-size:11px;color:rgba(40,35,28,.4);}
 .boxclose{opacity:0;font-size:11px;color:var(--soft);cursor:pointer;}
 .card:hover .boxclose{opacity:.6;}
+.boxclose.active{opacity:.9;color:var(--ink);font-weight:700;}
+.card:hover .boxclose.active{opacity:1;}
 .card.addbox{
   display:flex;align-items:center;justify-content:center;min-height:60px;cursor:pointer;
   border-style:dashed;box-shadow:none;
@@ -356,6 +358,8 @@ canvas#band{display:block;width:100%;height:32px;margin-top:16px;border-radius:2
   background-position:0 30px;
 }
 .scribble{font-family:'Caveat',cursive;font-size:20px;line-height:1.45;}
+.scratch-row{display:inline-flex;align-items:baseline;gap:6px;}
+.scratch-row .boxclose{font-family:'Courier Prime',monospace;font-size:10px;}
 
 .cal{width:100%;border-collapse:collapse;table-layout:fixed;margin-top:4px;}
 .cal th{font-size:9.5px;color:var(--soft);font-weight:400;text-transform:uppercase;letter-spacing:.06em;padding-bottom:5px;}

@@ -56,3 +56,9 @@ alter table entries add column if not exists image_url text;
 -- Migration 4 — Apple Pencil / touch handwriting on diary entries and task post-its.
 -- Stores vector ink (stroke point arrays), not an image, so it stays crisp and small.
 alter table entries add column if not exists drawing jsonb;
+
+-- Migration 5 — text styling: a font choice for notes/scratchpad, and underline/highlight
+-- decorations for tasks.
+alter table entries add column if not exists font text;
+alter table entries add column if not exists underline boolean default false;
+alter table entries add column if not exists highlight boolean default false;

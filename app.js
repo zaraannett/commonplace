@@ -77,6 +77,7 @@ function toDbRow(e) {
     done: e.done, done_at: e.doneAt, pinned: e.pinned, source: e.source,
     weekly_target: e.weeklyTarget ?? null, checkins: e.checkins ?? null,
     box_id: e.boxId ?? null, image_url: e.imageUrl ?? null, drawing: e.drawing ?? null,
+    font: e.font ?? null, underline: e.underline ?? false, highlight: e.highlight ?? false,
   };
 }
 function fromDbRow(r) {
@@ -84,6 +85,7 @@ function fromDbRow(r) {
     id: r.id, createdAt: r.created_at, type: r.type, title: r.title || "", body: r.body || "",
     tags: r.tags || [], dueAt: r.due_at, done: r.done, doneAt: r.done_at, pinned: r.pinned,
     boxId: r.box_id || null, imageUrl: r.image_url || null, drawing: r.drawing || null,
+    font: r.font || null, underline: !!r.underline, highlight: !!r.highlight,
     source: r.source || "manual",
   };
   if (r.weekly_target != null) e.weeklyTarget = r.weekly_target;
@@ -300,6 +302,62 @@ function wireAddTag(card) {
     addTagsToEntry(x.dataset.addtag);
   }));
 }
+
+// ── text font choice (notes, scratchpad) ──────────────────────────────
+// A small curated set rather than every Google Font under the sun — "default" is the app's own
+// monospace voice, "klee" is a free stand-in for a paid handwritten-serif font she wanted (see
+// CLAUDE.md), the other two are fonts already loaded elsewhere in the app so picking them costs
+// nothing extra.
+const NOTE_FONTS = ["default", "klee", "newsreader", "caveat"];
+const NOTE_FONT_CSS = {
+  default: "", klee: "'Klee One', serif", newsreader: "'Newsreader', serif", caveat: "'Caveat', cursive",
+};
+function noteFontOf(e) {
+  return (e.font && NOTE_FONTS.includes(e.font)) ? e.font : "default";
+}
+function noteFontStyle(e) {
+  const css = NOTE_FONT_CSS[noteFontOf(e)];
+  return css ? ` style="font-family:${css}"` : "";
+}
+function cycleNoteFont(id) {
+  const e = entries.find((x) => x.id === id);
+  if (!e) return;
+  const next = NOTE_FONTS[(NOTE_FONTS.indexOf(noteFontOf(e)) + 1) % NOTE_FONTS.length];
+  e.font = next;
+  render();
+  db.from("entries").update({ font: e.font }).eq("id", id).then(({ error }) => { if (error) console.error("update failed", error); });
+}
+function wireFontToggle(card) {
+  card.querySelectorAll("[data-fonttoggle]").forEach((x) => x.addEventListener("click", (ev) => {
+    ev.stopPropagation();
+    cycleNoteFont(x.dataset.fonttoggle);
+  }));
+}
+
+// ── task text decorations (underline / highlight) ─────────────────────
+function taskTextStyle(e) {
+  const parts = [];
+  if (e.underline) parts.push("text-decoration-line:underline;text-decoration-style:wavy;text-decoration-color:var(--rose);text-decoration-thickness:2px;text-underline-offset:2px;");
+  if (e.highlight) parts.push("background-image:linear-gradient(rgba(245,226,122,.6),rgba(245,226,122,.6));background-repeat:no-repeat;background-size:100% 55%;background-position:0 68%;");
+  return parts.length ? ` style="${parts.join("")}"` : "";
+}
+function toggleTaskDecoration(id, key) {
+  const e = entries.find((x) => x.id === id);
+  if (!e) return;
+  e[key] = !e[key];
+  render();
+  db.from("entries").update({ [key]: e[key] }).eq("id", id).then(({ error }) => { if (error) console.error("update failed", error); });
+}
+function wireTaskDecorations(card) {
+  card.querySelectorAll("[data-underline]").forEach((x) => x.addEventListener("click", (ev) => {
+    ev.stopPropagation();
+    toggleTaskDecoration(x.dataset.underline, "underline");
+  }));
+  card.querySelectorAll("[data-highlight]").forEach((x) => x.addEventListener("click", (ev) => {
+    ev.stopPropagation();
+    toggleTaskDecoration(x.dataset.highlight, "highlight");
+  }));
+}
 function matchesFilter(e) {
   if (activeTag && !e.tags.includes(activeTag)) return false;
   if (searchQuery) {
@@ -466,7 +524,7 @@ function taskRowHtml(e) {
   const expanded = expandedTaskIds.has(e.id);
   return `<div class="taskrow">
       <div class="row${e.done ? " done" : ""}" data-id="${e.id}">
-        <div class="box"></div><span class="txt" data-detail-toggle="${e.id}">${escapeHtml(e.body)}</span>
+        <div class="box"></div><span class="txt" data-detail-toggle="${e.id}"${taskTextStyle(e)}>${escapeHtml(e.body)}</span>
         <span class="end">${end}<span class="del" data-del="${e.id}" title="delete">✕</span></span>
       </div>
       ${expanded ? `<div class="task-detail"><textarea data-detail-input="${e.id}" placeholder="add a note — saving pulls this task onto its own card…">${escapeHtml(e.title || "")}</textarea></div>` : ""}
@@ -505,13 +563,16 @@ function taskDetailCard(e) {
   }
   card.innerHTML =
     `<div class="meta"><span>Task</span><span class="tags">${e.tags.map((t) => tagSpan(t)).join(" ")}` +
+    `<span class="boxclose${e.underline ? " active" : ""}" data-underline="${e.id}" title="underline">U</span>` +
+    `<span class="boxclose${e.highlight ? " active" : ""}" data-highlight="${e.id}" title="highlight">H</span>` +
     `<span class="boxclose" data-addtag="${e.id}" title="add tag">+</span>` +
     `<span class="boxclose" data-del="${e.id}" title="delete">✕</span></span></div>` +
-    `<div class="row${e.done ? " done" : ""}" data-id="${e.id}"><div class="box"></div><span class="txt">${escapeHtml(e.body)}</span></div>` +
+    `<div class="row${e.done ? " done" : ""}" data-id="${e.id}"><div class="box"></div><span class="txt"${taskTextStyle(e)}>${escapeHtml(e.body)}</span></div>` +
     detail;
   wireRows(card);
   wireTaskDetailInputs(card);
   wireAddTag(card);
+  wireTaskDecorations(card);
   card.querySelectorAll("[data-detail-toggle]").forEach((el) => el.addEventListener("click", () => {
     expandedTaskIds.add(e.id);
     render();
@@ -582,12 +643,18 @@ function scratchCard() {
   card.innerHTML =
     `<div class="meta"><span>Scratchpad</span><span class="tags">${tagSpan("loose")}</span></div>` +
     `<div class="scribble">` +
-    items.map((e) => `<span class="scratch-line${e.done ? " strike" : ""}" data-id="${e.id}" style="cursor:pointer;${e.done ? "text-decoration:line-through;color:var(--soft);" : ""}">${escapeHtml(e.body)}</span>`).join("<br>") +
+    items.map((e) => {
+      const fontCss = NOTE_FONT_CSS[noteFontOf(e)];
+      const style = `cursor:pointer;${e.done ? "text-decoration:line-through;color:var(--soft);" : ""}${fontCss ? `font-family:${fontCss};` : ""}`;
+      return `<span class="scratch-row"><span class="scratch-line${e.done ? " strike" : ""}" data-id="${e.id}" style="${style}">${escapeHtml(e.body)}</span>` +
+        `<span class="boxclose" data-fonttoggle="${e.id}" title="change font (${noteFontOf(e)})">Aa</span></span>`;
+    }).join("<br>") +
     `</div>` +
     addRowHtml("jot something…");
   card.querySelectorAll(".scratch-line").forEach((line) => {
     line.addEventListener("click", () => toggleDone(line.dataset.id));
   });
+  wireFontToggle(card);
   wireAddRow(card, { type: "scratch", tags: ["loose"] });
   return card;
 }
@@ -1050,16 +1117,20 @@ function noteCards() {
     const thumbHtml = e.imageUrl
       ? `<a href="${escapeHtml(e.body)}" target="_blank" rel="noopener noreferrer"><img class="note-thumb" src="${escapeHtml(e.imageUrl)}" alt="" loading="lazy" onerror="this.remove()"></a>`
       : "";
+    const fontStyle = noteFontStyle(e);
     card.innerHTML =
-      `<div class="meta"><span>${dateStr}</span><span class="tags">${tagsHtml}<span class="boxclose" data-addtag="${e.id}" title="add tag">+</span><span class="boxclose" data-del="${e.id}" title="delete">✕</span></span></div>` +
+      `<div class="meta"><span>${dateStr}</span><span class="tags">${tagsHtml}` +
+      `<span class="boxclose" data-fonttoggle="${e.id}" title="change font (${noteFontOf(e)})">Aa</span>` +
+      `<span class="boxclose" data-addtag="${e.id}" title="add tag">+</span><span class="boxclose" data-del="${e.id}" title="delete">✕</span></span></div>` +
       thumbHtml +
-      (e.title ? `<h2>${escapeHtml(e.title)}</h2>` : "") +
-      `<p>${bodyHtml}</p>`;
+      (e.title ? `<h2${fontStyle}>${escapeHtml(e.title)}</h2>` : "") +
+      `<p${fontStyle}>${bodyHtml}</p>`;
     card.querySelectorAll("[data-del]").forEach((x) => x.addEventListener("click", (ev) => {
       ev.stopPropagation();
       deleteEntry(x.dataset.del);
     }));
     wireAddTag(card);
+    wireFontToggle(card);
     return card;
   });
 }
