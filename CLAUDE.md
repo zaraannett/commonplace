@@ -180,6 +180,42 @@ per entry (draw OR type, not a layer on top of text), per explicit choice over a
   same class of deliberate scope-limit as the Day view placeholder. Not expected to matter much in
   practice since orientation is normally settled before you start drawing.
 
+### Named pens (Sanderling / Bellerive / Liffey / Highlighter) (done)
+A `.brush` file is just a zip archive — `Brush.archive` inside is a real, readable
+NSKeyedArchiver plist (`plutil -convert xml1`), not obfuscated, so her actual Procreate pens were
+recreated from their real numeric settings rather than guessed:
+- `PEN_PRESETS` in `app.js` — each preset's `size`/`thinning` come from that brush's
+  `minSize`/`maxSize` ratio (how much pressure narrows the stroke), `minAlpha`/`maxAlpha` from
+  `minOpacity`/`maxOpacity` + whether `dynamicsPressureOpacity` was actually nonzero (Bellerive's
+  opacity visibly builds with pressure; Sanderling/Liffey stay fully opaque), and `grain` from
+  `grainDepth` (how strongly the shared paper-grain texture multiplies over the fill). Sanderling
+  = fine liner, Bellerive = soft pencil-like brush whose opacity responds to pressure, Liffey =
+  bold textured marker. Their preview swatches (a QuickLook thumbnail rendered white-on-transparent,
+  needs compositing onto a dark background to actually see) confirmed the shapes read as expected
+  before committing to numbers.
+- **Highlighter** is a fourth preset, seeded from a watercolor-calligraphy brush but hand-tuned
+  to spec rather than matched: wide, flat 50% opacity (not pressure-varying, per explicit ask),
+  and painted with `globalCompositeOperation`/`mix-blend-mode: "multiply"` instead of solid —
+  so it tints whatever it crosses (lined paper, other ink already on the same canvas) rather than
+  covering it. Its own pastel color palette (`HIGHLIGHTER_PALETTE`) is separate from the pens'
+  ink palette (`INK_PALETTE`, the app's existing tag colors) — half the ink palette would barely
+  read at 50% opacity, and real highlighters are pastel/neon, not dark.
+- Grain texture is one small procedural speckle canvas (`grainCanvas()`, generated once at
+  load), reused identically as a repeating `canvas` pattern while drawing live and as an embedded
+  `data:` image inside an SVG `<pattern>` for the saved replay — same exact bitmap both times, so
+  a drawing doesn't shift appearance between editing and Done. Chose procedural noise over
+  embedding the real extracted Shape.png/Grain.png textures (some brushes did bundle real ones)
+  to keep the no-build-step, single-file-app.js architecture — real textures would mean a binary
+  asset pipeline for a fairly small visual gain on what's fundamentally still a UI pen tool.
+- Data shape: `entries.drawing.strokes[i]` is now `{ tool, color, points }` instead of a bare
+  point array. `normalizeStroke()` upgrades any old bare-array stroke (from before pens existed)
+  into `{ tool: "sanderling", color: <app ink color>, points: <old array> }` on read, so nothing
+  saved earlier needed a migration or looks different now.
+- The pen/color toolbar (`penToolbarHtml()`/`wirePenToolbar()`) only flips module-level state
+  (`currentPen`/`currentPenColor`) and patches its own markup directly — same as everything else
+  touching an open sketch, it deliberately never calls `render()`, so picking a different pen or
+  color mid-drawing can't tear down the live canvas.
+
 ## Next phases (see spec + conversation)
 - AI auto-tagging (Gemini) so capture doesn't require picking type/tags by hand.
 - Real Day view (needs a time field added to the schema).

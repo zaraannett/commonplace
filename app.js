@@ -465,7 +465,7 @@ function taskDetailCard(e) {
   const sketching = editing && (sketchModeTaskIds.has(e.id) || (hasInk(e) && !(e.title && e.title.trim())));
   let detail;
   if (editing && sketching) {
-    detail = `<div class="sketchpad-wrap"><canvas class="sketchpad small" data-sketch="${e.id}"></canvas>
+    detail = `<div class="sketchpad-wrap">${penToolbarHtml()}<canvas class="sketchpad small" data-sketch="${e.id}"></canvas>
       <div class="sketch-toolbar">
         <button type="button" class="sketch-btn" data-sketch-undo="${e.id}">undo</button>
         <button type="button" class="sketch-btn" data-sketch-clear="${e.id}">clear</button>
@@ -503,6 +503,7 @@ function taskDetailCard(e) {
     render();
   }));
   if (editing && sketching) {
+    wirePenToolbar(card);
     const canvas = card.querySelector("canvas.sketchpad");
     const ctl = initSketchpad(canvas, e.drawing, (d) => updateEntryDrawing(e.id, d));
     card.querySelector("[data-sketch-undo]").addEventListener("click", (ev) => { ev.stopPropagation(); ctl.undo(); });
@@ -574,7 +575,7 @@ function diaryCards() {
     const sketching = editingSketchIds.has(e.id);
     let body;
     if (sketching) {
-      body = `<div class="sketchpad-wrap"><canvas class="sketchpad" data-sketch="${e.id}"></canvas>
+      body = `<div class="sketchpad-wrap">${penToolbarHtml()}<canvas class="sketchpad" data-sketch="${e.id}"></canvas>
         <div class="sketch-toolbar">
           <button type="button" class="sketch-btn" data-sketch-undo="${e.id}">undo</button>
           <button type="button" class="sketch-btn" data-sketch-clear="${e.id}">clear</button>
@@ -607,6 +608,7 @@ function diaryCards() {
       render();
     }));
     if (sketching) {
+      wirePenToolbar(card);
       const canvas = card.querySelector("canvas.sketchpad");
       const ctl = initSketchpad(canvas, e.drawing, (d) => updateEntryDrawing(e.id, d));
       card.querySelector("[data-sketch-undo]").addEventListener("click", (ev) => { ev.stopPropagation(); ctl.undo(); });
@@ -623,7 +625,48 @@ let getStroke = null;
 import("https://esm.sh/perfect-freehand").then((m) => { getStroke = m.default; }).catch((err) => console.error("perfect-freehand failed to load", err));
 
 const INK_COLOR = (getComputedStyle(document.documentElement).getPropertyValue("--ink") || "#28231C").trim() || "#28231C";
-const STROKE_OPTS = { size: 3.2, thinning: 0.65, smoothing: 0.55, streamline: 0.55 };
+
+// Three real Procreate pens, approximated from the actual numeric settings inside the .brush
+// files she sent (they're zip archives with a readable parameter plist — not guesses). size/
+// thinning drive perfect-freehand's outline (thinning = how much pressure narrows the stroke,
+// derived from each brush's minSize/maxSize ratio); minAlpha/maxAlpha interpolate by the
+// stroke's average pressure (Bellerive's opacity visibly builds with pressure in the original;
+// Sanderling/Liffey stay fully opaque regardless of pressure); grain is how strongly the shared
+// paper-grain texture multiplies over the fill (0 = none), matching each brush's grainDepth.
+// Highlighter is a fourth preset, from the watercolor-calligraphy brush she sent as a starting
+// point: same underlying stroke engine, but wide, flat opacity (she asked for 50% specifically,
+// not pressure-varying like the pens above), and blended with "multiply" instead of drawn
+// solid — so it tints whatever it crosses (lined paper, other ink) rather than covering it.
+const PEN_PRESETS = {
+  sanderling: { label: "Sanderling", size: 7, thinning: 0.85, minAlpha: 1, maxAlpha: 1, grain: 0.18 },
+  bellerive: { label: "Bellerive", size: 6, thinning: 0.92, minAlpha: 0.55, maxAlpha: 1, grain: 0.4 },
+  liffey: { label: "Liffey", size: 15, thinning: 0.85, minAlpha: 1, maxAlpha: 1, grain: 0.48 },
+  highlighter: { label: "Highlighter", size: 26, thinning: 0.25, minAlpha: 0.5, maxAlpha: 0.5, grain: 0.2, blend: "multiply" },
+};
+const PEN_ORDER = ["sanderling", "bellerive", "liffey", "highlighter"];
+const INK_PALETTE = [
+  { name: "ink", hex: "#28231C" }, { name: "rose", hex: "#C25E7C" }, { name: "butter", hex: "#B8862A" },
+  { name: "sage", hex: "#6F8A57" }, { name: "peri", hex: "#6B77BF" }, { name: "lilac", hex: "#9A6FBF" },
+  { name: "cyan", hex: "#3F97A3" },
+];
+// A separate, lighter set for the highlighter — real highlighters come in soft/neon pastels,
+// not the app's darker ink palette, and half of INK_PALETTE would barely read at 50% opacity.
+const HIGHLIGHTER_PALETTE = [
+  { name: "pastel-yellow", hex: "#F5E27A" }, { name: "pastel-pink", hex: "#F3AFC0" },
+  { name: "pastel-mint", hex: "#A8D9C5" }, { name: "pastel-blue", hex: "#A9C9E8" },
+  { name: "pastel-lilac", hex: "#CBB6E0" }, { name: "pastel-peach", hex: "#F3C6A0" },
+];
+function paletteFor(penId) {
+  return penId === "highlighter" ? HIGHLIGHTER_PALETTE : INK_PALETTE;
+}
+let currentPen = "sanderling";
+let currentPenColor = INK_COLOR;
+
+// A stroke saved before pens existed is just a bare point array — treat it as a plain Sanderling
+// stroke in the app's ink color so old drawings keep rendering exactly as they did.
+function normalizeStroke(raw) {
+  return Array.isArray(raw) ? { tool: "sanderling", color: INK_COLOR, points: raw } : raw;
+}
 
 // Standard perfect-freehand helper (from its own docs): turns the polygon outline getStroke()
 // returns into a smoothed SVG path string.
@@ -640,30 +683,117 @@ function svgPathFromOutline(points) {
   d.push("Z");
   return d.join(" ");
 }
-function strokeToPath(points) {
+function strokeToPath(points, preset) {
   if (!points || points.length < 2) return "";
+  const p = preset || PEN_PRESETS.sanderling;
   if (getStroke) {
     // Real per-point pressure only comes from an Apple Pencil; mouse/touch points are all
     // recorded at a constant 0.5 (see localPoint below), so simulate a natural taper for those
     // instead of drawing a uniform-width line.
-    const simulatePressure = !points.some((p) => p[2] !== 0.5);
-    return svgPathFromOutline(getStroke(points, Object.assign({ simulatePressure }, STROKE_OPTS)));
+    const simulatePressure = !points.some((pt) => pt[2] !== 0.5);
+    return svgPathFromOutline(getStroke(points, { size: p.size, thinning: p.thinning, smoothing: 0.55, streamline: 0.55, simulatePressure }));
   }
-  return "M " + points.map((p) => p[0] + " " + p[1]).join(" L ");
+  return "M " + points.map((pt) => pt[0] + " " + pt[1]).join(" L ");
 }
+function avgPressure(points) {
+  return points.reduce((sum, p) => sum + p[2], 0) / points.length;
+}
+
+// A small tileable speckle texture, generated once and reused as-is for both the live canvas
+// (as a repeating pattern, multiplied over the ink) and the saved SVG replay (the exact same
+// bitmap embedded via a data URL) — so a drawing looks identical while editing and after Done.
+let grainCanvasCache = null;
+function grainCanvas() {
+  if (grainCanvasCache) return grainCanvasCache;
+  const n = document.createElement("canvas");
+  n.width = n.height = 48;
+  const nctx = n.getContext("2d");
+  for (let i = 0; i < 900; i++) {
+    const v = Math.floor(Math.random() * 90);
+    nctx.fillStyle = `rgba(${v},${v},${v},${(0.35 + Math.random() * 0.4).toFixed(2)})`;
+    nctx.fillRect(Math.random() * 48, Math.random() * 48, 1, 1);
+  }
+  grainCanvasCache = n;
+  return n;
+}
+function paintStroke(ctx, stroke) {
+  const preset = PEN_PRESETS[stroke.tool] || PEN_PRESETS.sanderling;
+  if (!stroke.points || stroke.points.length < 2) return;
+  const d = strokeToPath(stroke.points, preset);
+  if (!d) return;
+  const path = new Path2D(d);
+  const alpha = preset.minAlpha + (preset.maxAlpha - preset.minAlpha) * avgPressure(stroke.points);
+  ctx.save();
+  ctx.globalCompositeOperation = preset.blend || "source-over";
+  ctx.fillStyle = stroke.color || INK_COLOR;
+  ctx.globalAlpha = alpha;
+  ctx.fill(path);
+  if (preset.grain > 0) {
+    ctx.globalCompositeOperation = "multiply";
+    ctx.globalAlpha = preset.grain;
+    ctx.fillStyle = ctx.createPattern(grainCanvas(), "repeat");
+    ctx.fill(path);
+  }
+  ctx.restore();
+}
+const SKETCH_GRAIN_DEFS = `<defs><pattern id="sketchGrain" width="48" height="48" patternUnits="userSpaceOnUse"><image href="${grainCanvas().toDataURL()}" width="48" height="48"/></pattern></defs>`;
 function sketchSvg(drawing, cls) {
   if (!drawing || !drawing.strokes || !drawing.strokes.length) return "";
-  const paths = drawing.strokes.map((pts) => {
-    const d = strokeToPath(pts);
+  let usesGrain = false;
+  const paths = drawing.strokes.map((raw) => {
+    const stroke = normalizeStroke(raw);
+    const preset = PEN_PRESETS[stroke.tool] || PEN_PRESETS.sanderling;
+    if (!stroke.points || stroke.points.length < 2) return "";
+    const color = stroke.color || INK_COLOR;
+    if (!getStroke) {
+      return `<path d="M ${stroke.points.map((pt) => pt[0] + " " + pt[1]).join(" L ")}" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>`;
+    }
+    const d = strokeToPath(stroke.points, preset);
     if (!d) return "";
-    return getStroke
-      ? `<path d="${d}" fill="${INK_COLOR}"/>`
-      : `<path d="${d}" fill="none" stroke="${INK_COLOR}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>`;
+    const alpha = preset.minAlpha + (preset.maxAlpha - preset.minAlpha) * avgPressure(stroke.points);
+    let grainOverlay = "";
+    if (preset.grain > 0) {
+      usesGrain = true;
+      grainOverlay = `<path d="${d}" fill="url(#sketchGrain)" opacity="${preset.grain}" style="mix-blend-mode:multiply"/>`;
+    }
+    const blendStyle = preset.blend ? ` style="mix-blend-mode:${preset.blend}"` : "";
+    return `<path d="${d}" fill="${color}" opacity="${alpha}"${blendStyle}/>${grainOverlay}`;
   }).join("");
-  return `<svg class="${cls}" viewBox="0 0 ${drawing.w || 300} ${drawing.h || 200}" preserveAspectRatio="xMidYMin meet">${paths}</svg>`;
+  return `<svg class="${cls}" viewBox="0 0 ${drawing.w || 300} ${drawing.h || 200}" preserveAspectRatio="xMidYMin meet">${usesGrain ? SKETCH_GRAIN_DEFS : ""}${paths}</svg>`;
 }
 function hasInk(e) {
   return !!(e.drawing && e.drawing.strokes && e.drawing.strokes.length);
+}
+function colorSwatchesHtml(penId) {
+  return paletteFor(penId).map((c) => `<button type="button" class="pen-color${c.hex === currentPenColor ? " active" : ""}" data-pen-color="${c.hex}" style="background:${c.hex}" title="${c.name}"></button>`).join("");
+}
+function penToolbarHtml() {
+  const pens = PEN_ORDER.map((id) => `<button type="button" class="pen-btn${id === currentPen ? " active" : ""}" data-pen="${id}">${PEN_PRESETS[id].label}</button>`).join("");
+  return `<div class="pen-toolbar">${pens}</div><div class="pen-colors">${colorSwatchesHtml(currentPen)}</div>`;
+}
+function wirePenToolbar(card) {
+  // Only flips module-level state + toggles markup within this one toolbar — deliberately never
+  // calls render(), same reasoning as updateEntryDrawing: a live sketch canvas must never be torn
+  // down mid-session.
+  const colorsEl = card.querySelector(".pen-colors");
+  function wireColorButtons() {
+    colorsEl.querySelectorAll("[data-pen-color]").forEach((btn) => btn.addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      currentPenColor = btn.dataset.penColor;
+      colorsEl.querySelectorAll("[data-pen-color]").forEach((b) => b.classList.toggle("active", b === btn));
+    }));
+  }
+  card.querySelectorAll("[data-pen]").forEach((btn) => btn.addEventListener("click", (ev) => {
+    ev.stopPropagation();
+    currentPen = btn.dataset.pen;
+    card.querySelectorAll("[data-pen]").forEach((b) => b.classList.toggle("active", b === btn));
+    // Highlighter and pens use different color families — reset to a valid one when switching.
+    const palette = paletteFor(currentPen);
+    if (!palette.some((c) => c.hex === currentPenColor)) currentPenColor = palette[0].hex;
+    colorsEl.innerHTML = colorSwatchesHtml(currentPen);
+    wireColorButtons();
+  }));
+  wireColorButtons();
 }
 
 // Wires pointer events onto a blank canvas for freehand drawing. Palm rejection is simple but
@@ -672,8 +802,8 @@ function hasInk(e) {
 function initSketchpad(canvas, drawing, onChange) {
   drawing = drawing || { w: 0, h: 0, strokes: [] };
   const ctx = canvas.getContext("2d");
-  let strokes = (drawing.strokes || []).map((s) => s.slice());
-  let current = null;
+  let strokes = (drawing.strokes || []).map(normalizeStroke);
+  let current = null; // bare points array for the in-progress stroke; wrapped with the active pen/color once finished
   let activePointerId = null;
   let lastPenUpAt = 0;
 
@@ -690,20 +820,20 @@ function initSketchpad(canvas, drawing, onChange) {
   function redraw() {
     const rect = canvas.getBoundingClientRect();
     ctx.clearRect(0, 0, rect.width, rect.height);
-    ctx.fillStyle = INK_COLOR;
-    ctx.strokeStyle = INK_COLOR;
-    (current ? strokes.concat([current]) : strokes).forEach((pts) => {
-      if (pts.length < 2) return;
-      if (getStroke) {
-        const d = strokeToPath(pts);
-        if (d) ctx.fill(new Path2D(d));
-      } else {
+    if (getStroke) {
+      strokes.forEach((s) => paintStroke(ctx, s));
+      if (current && current.length > 1) paintStroke(ctx, { tool: currentPen, color: currentPenColor, points: current });
+    } else {
+      // library still loading — plain polyline fallback, ignores pen styling until it's ready
+      ctx.strokeStyle = INK_COLOR;
+      (current ? strokes.map((s) => s.points).concat([current]) : strokes.map((s) => s.points)).forEach((pts) => {
+        if (pts.length < 2) return;
         ctx.beginPath();
         pts.forEach((p, i) => (i === 0 ? ctx.moveTo(p[0], p[1]) : ctx.lineTo(p[0], p[1])));
         ctx.lineWidth = 2.2; ctx.lineCap = "round"; ctx.lineJoin = "round";
         ctx.stroke();
-      }
-    });
+      });
+    }
   }
   function localPoint(e) {
     const rect = canvas.getBoundingClientRect();
@@ -728,7 +858,7 @@ function initSketchpad(canvas, drawing, onChange) {
   function up(e) {
     if (e.pointerId !== activePointerId) return;
     if (e.pointerType === "pen") lastPenUpAt = Date.now();
-    if (current && current.length > 1) strokes.push(current);
+    if (current && current.length > 1) strokes.push({ tool: currentPen, color: currentPenColor, points: current });
     current = null;
     activePointerId = null;
     redraw();
