@@ -838,31 +838,47 @@ function drawJitteredRing(ctx, cx, cy, r) {
     ctx.fill();
   }
 }
+// Each stain is its own small square tile, drawn at a fixed real size and positioned near a
+// corner via background-position — NOT one big image stretched to fill the whole card. A card's
+// own proportions vary a lot now (mixed sizing, different grid-column widths), and stretching a
+// fixed image to fill an arbitrary box distorts a round ring into an egg; a real coffee ring
+// doesn't get bigger or rounder just because the sheet of paper under it is bigger.
 // Positions differ per variant so the three still read as distinct placements, matching the
 // stain-1/2/3 names already used elsewhere (paperClassOf, randomStainVariant).
 const STAIN_LAYOUTS = {
-  1: (w, h) => [[w * 0.82, h * 0.2, Math.min(w, h) * 0.16]],
-  2: (w, h) => [[w * 0.15, h * 0.82, Math.min(w, h) * 0.13], [w * 0.87, h * 0.88, Math.min(w, h) * 0.07]],
-  3: (w, h) => [[w * 0.48, h * 0.16, Math.min(w, h) * 0.11]],
+  1: [{ radius: 26, position: "top 6px right 10px" }],
+  2: [{ radius: 22, position: "bottom 8px left 8px" }, { radius: 12, position: "bottom 6px right 10px" }],
+  3: [{ radius: 18, position: "top 6px left 44%" }],
 };
-let stainCanvasCache = {};
-function stainCanvas(variant) {
-  if (stainCanvasCache[variant]) return stainCanvasCache[variant];
-  const w = 380, h = 300;
+let stainTileCache = {};
+// Drawn at 2x and displayed at the logical (radius-derived) size so it stays crisp on retina
+// screens instead of looking soft when a small canvas gets upscaled by the browser.
+function stainTile(radius) {
+  if (stainTileCache[radius]) return stainTileCache[radius];
+  const dpr = 2;
+  const pad = 16; // room for droplets scattered outside the ring itself
+  const size = Math.ceil((radius + pad) * 2);
   const c = document.createElement("canvas");
-  c.width = w; c.height = h;
+  c.width = c.height = size * dpr;
   const ctx = c.getContext("2d");
-  (STAIN_LAYOUTS[variant] || STAIN_LAYOUTS[1])(w, h).forEach(([x, y, r]) => drawJitteredRing(ctx, x, y, r));
-  stainCanvasCache[variant] = c;
+  ctx.scale(dpr, dpr);
+  drawJitteredRing(ctx, size / 2, size / 2, radius);
+  c.cssSize = size;
+  stainTileCache[radius] = c;
   return c;
 }
 // Generated once at load and injected as real CSS (not inline per-card), so .stain-1/2/3 keep
 // working as plain classes everywhere they're already used (paperClassOf, the board's cards).
 (function injectStainStyles() {
   const styleEl = document.createElement("style");
-  styleEl.textContent = STAIN_VARIANTS.map(
-    (v) => `.card.paper-stained.stain-${v}{background-image:url(${stainCanvas(v).toDataURL()});background-size:100% 100%;background-repeat:no-repeat;}`
-  ).join("\n");
+  styleEl.textContent = STAIN_VARIANTS.map((v) => {
+    const layers = STAIN_LAYOUTS[v] || STAIN_LAYOUTS[1];
+    const tiles = layers.map((l) => stainTile(l.radius));
+    const images = tiles.map((t) => `url(${t.toDataURL()})`).join(",");
+    const positions = layers.map((l) => l.position).join(",");
+    const sizes = tiles.map((t) => `${t.cssSize}px ${t.cssSize}px`).join(",");
+    return `.card.paper-stained.stain-${v}{background-image:${images};background-position:${positions};background-size:${sizes};background-repeat:no-repeat;}`;
+  }).join("\n");
   document.head.appendChild(styleEl);
 })();
 
