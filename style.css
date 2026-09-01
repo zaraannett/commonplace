@@ -346,12 +346,14 @@ canvas#band{display:block;width:100%;height:32px;margin-top:16px;border-radius:2
 .card.paper-notecard.notecard-yellow{background:#FBEFB8;border-color:#E8D07E;}
 .card.paper-notecard.notecard-pink{background:#F8D6CA;border-color:#E9AF9B;}
 .card.paper-notecard.notecard-mint{background:#D2EEDE;border-color:#A2D8BC;}
-.card.paper-stained{
-  /* Plain paper with a coffee-ring stain. The stain image itself (irregular, hand-drawn-looking
-     ring + droplets, not a clean CSS gradient circle) is generated procedurally on a canvas and
-     injected as real background-image CSS at load — see stainCanvas()/injectStainStyles() in
-     app.js, right next to grainCanvas() which does the same trick for ink texture. */
+.card.paper-warm{
+  /* Plain warm-toned ruled paper. Tried a coffee-stain graphic here first (a couple of rounds of
+     tuning — procedural canvas rings, lighter color, less opacity — never landed), dropped it;
+     lines only now, no marks. Rule-line color is a soft brown rather than classic's blue so the
+     two don't read as the same paper in a different tint. */
   background-color:#FBF7ED;border:1px solid #E9E2CE;box-shadow:0 1px 0 rgba(40,35,28,.06);
+  background-image:repeating-linear-gradient(to bottom, transparent, transparent 17px, rgba(150,118,80,.3) 17px, rgba(150,118,80,.3) 18px);
+  background-position:0 30px;
 }
 .scribble{font-family:'Caveat',cursive;font-size:20px;line-height:1.45;}
 

@@ -678,16 +678,16 @@ let currentPen = "sanderling";
 let currentPenColor = INK_COLOR;
 
 // Each sketch gets a random paper style at creation, so a page of notes doesn't look uniform —
-// "stained" is plain paper with a coffee-ring stain (a couple of position/size variants); the
-// other three are plain rectangles with just a different background. Picked once and stored on
-// the drawing itself (not re-rolled on every render) so a note doesn't change paper every time
-// it redraws.
-const PAPER_STYLES = ["stained", "classic", "graph", "notecard"];
+// "warm" is plain warm-toned ruled paper (tried a coffee-stain graphic on it first; didn't land
+// after a couple of rounds of tuning, dropped it — lines only, no marks); the other three are
+// plain rectangles with just a different background. Picked once and stored on the drawing
+// itself (not re-rolled on every render) so a note doesn't change paper every time it redraws.
+const PAPER_STYLES = ["warm", "classic", "graph", "notecard"];
 function randomPaperStyle() {
   return PAPER_STYLES[Math.floor(Math.random() * PAPER_STYLES.length)];
 }
 function paperOf(drawing) {
-  return (drawing && drawing.paper) || "stained"; // drawings saved before this feature default to the original look
+  return (drawing && drawing.paper) || "warm"; // drawings saved before this feature default to the original look
 }
 // Notecard is the one style that also varies by color — chosen well clear of colors already used
 // elsewhere on the board (postit pink, butter, sage) so a notecard sketch doesn't blend in as
@@ -699,20 +699,9 @@ function randomNotecardColor() {
 function notecardColorOf(drawing) {
   return (drawing && drawing.cardColor) || "blue";
 }
-// Stained is the one style that varies by stain placement/size — three hand-picked variants
-// rather than fully random coordinates, same reasoning as notecard's color set.
-const STAIN_VARIANTS = ["1", "2", "3"];
-function randomStainVariant() {
-  return STAIN_VARIANTS[Math.floor(Math.random() * STAIN_VARIANTS.length)];
-}
-function stainVariantOf(drawing) {
-  return (drawing && drawing.stainVariant) || "1";
-}
 function paperClassOf(drawing) {
   const style = paperOf(drawing);
-  if (style === "notecard") return `paper-${style} notecard-${notecardColorOf(drawing)}`;
-  if (style === "stained") return `paper-${style} stain-${stainVariantOf(drawing)}`;
-  return `paper-${style}`;
+  return style === "notecard" ? `paper-${style} notecard-${notecardColorOf(drawing)}` : `paper-${style}`;
 }
 // Sketch cards also vary in size, independent of paper style, so a page of notes looks mixed
 // rather than uniform — picked once at creation, same as paper/color.
@@ -730,7 +719,7 @@ function sketchCanvasHeight(entryType, drawing) {
 // The one call every "new sketch" creation point uses, so paper/color/size are always rolled
 // together and nothing forgets one of them.
 function randomDrawingMeta() {
-  return { paper: randomPaperStyle(), cardColor: randomNotecardColor(), stainVariant: randomStainVariant(), sizeKey: randomSketchSize() };
+  return { paper: randomPaperStyle(), cardColor: randomNotecardColor(), sizeKey: randomSketchSize() };
 }
 // The pen/color picker only appears once she's actually touched the canvas with the Apple
 // Pencil this session — before that it's hidden so a sketch card is just paper, not a toolbar
@@ -795,92 +784,6 @@ function grainCanvas() {
   grainCanvasCache = n;
   return n;
 }
-
-// Real coffee rings dry unevenly — broken, wavy edges and a scatter of small satellite droplets,
-// not a clean circle. A CSS radial-gradient can only ever be a perfect circle, which is why the
-// first version of this looked more like a UI element than a stain. Drawing it on a canvas
-// instead — several overlapping jittered passes for the ring line, plus scattered droplet blobs —
-// gets close to the real texture, same procedural-canvas-as-background-image trick as grainCanvas.
-function drawJitteredRing(ctx, cx, cy, r) {
-  for (let pass = 0; pass < 5; pass++) {
-    ctx.beginPath();
-    const segments = 40;
-    for (let i = 0; i <= segments; i++) {
-      const a = (i / segments) * Math.PI * 2;
-      const rr = r + (Math.random() - 0.5) * 9;
-      const x = cx + Math.cos(a) * rr, y = cy + Math.sin(a) * rr;
-      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-    }
-    ctx.closePath();
-    ctx.strokeStyle = `rgba(163,124,84,${(0.05 + Math.random() * 0.08).toFixed(2)})`;
-    ctx.lineWidth = 1.2 + Math.random() * 2.4;
-    ctx.stroke();
-  }
-  ctx.beginPath();
-  ctx.arc(cx, cy, r * 0.86, 0, Math.PI * 2);
-  ctx.fillStyle = "rgba(163,124,84,.02)";
-  ctx.fill();
-  const droplets = 4 + Math.floor(Math.random() * 5);
-  for (let i = 0; i < droplets; i++) {
-    const a = Math.random() * Math.PI * 2;
-    const d = r * (0.85 + Math.random() * 0.6);
-    const bx = cx + Math.cos(a) * d, by = cy + Math.sin(a) * d;
-    const br = 2 + Math.random() * 5;
-    ctx.beginPath();
-    for (let j = 0; j <= 10; j++) {
-      const a2 = (j / 10) * Math.PI * 2;
-      const rr = br + (Math.random() - 0.5) * 3;
-      const x = bx + Math.cos(a2) * rr, y = by + Math.sin(a2) * rr;
-      if (j === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-    }
-    ctx.closePath();
-    ctx.fillStyle = `rgba(163,124,84,${(0.06 + Math.random() * 0.08).toFixed(2)})`;
-    ctx.fill();
-  }
-}
-// Each stain is its own small square tile, drawn at a fixed real size and positioned near a
-// corner via background-position — NOT one big image stretched to fill the whole card. A card's
-// own proportions vary a lot now (mixed sizing, different grid-column widths), and stretching a
-// fixed image to fill an arbitrary box distorts a round ring into an egg; a real coffee ring
-// doesn't get bigger or rounder just because the sheet of paper under it is bigger.
-// Positions differ per variant so the three still read as distinct placements, matching the
-// stain-1/2/3 names already used elsewhere (paperClassOf, randomStainVariant).
-const STAIN_LAYOUTS = {
-  1: [{ radius: 26, position: "top 6px right 10px" }],
-  2: [{ radius: 22, position: "bottom 8px left 8px" }, { radius: 12, position: "bottom 6px right 10px" }],
-  3: [{ radius: 18, position: "top 6px left 44%" }],
-};
-let stainTileCache = {};
-// Drawn at 2x and displayed at the logical (radius-derived) size so it stays crisp on retina
-// screens instead of looking soft when a small canvas gets upscaled by the browser.
-function stainTile(radius) {
-  if (stainTileCache[radius]) return stainTileCache[radius];
-  const dpr = 2;
-  const pad = 16; // room for droplets scattered outside the ring itself
-  const size = Math.ceil((radius + pad) * 2);
-  const c = document.createElement("canvas");
-  c.width = c.height = size * dpr;
-  const ctx = c.getContext("2d");
-  ctx.scale(dpr, dpr);
-  drawJitteredRing(ctx, size / 2, size / 2, radius);
-  c.cssSize = size;
-  stainTileCache[radius] = c;
-  return c;
-}
-// Generated once at load and injected as real CSS (not inline per-card), so .stain-1/2/3 keep
-// working as plain classes everywhere they're already used (paperClassOf, the board's cards).
-(function injectStainStyles() {
-  const styleEl = document.createElement("style");
-  styleEl.textContent = STAIN_VARIANTS.map((v) => {
-    const layers = STAIN_LAYOUTS[v] || STAIN_LAYOUTS[1];
-    const tiles = layers.map((l) => stainTile(l.radius));
-    const images = tiles.map((t) => `url(${t.toDataURL()})`).join(",");
-    const positions = layers.map((l) => l.position).join(",");
-    const sizes = tiles.map((t) => `${t.cssSize}px ${t.cssSize}px`).join(",");
-    return `.card.paper-stained.stain-${v}{background-image:${images};background-position:${positions};background-size:${sizes};background-repeat:no-repeat;}`;
-  }).join("\n");
-  document.head.appendChild(styleEl);
-})();
 
 function paintStroke(ctx, stroke) {
   const preset = PEN_PRESETS[stroke.tool] || PEN_PRESETS.sanderling;
