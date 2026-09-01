@@ -459,13 +459,15 @@ function bulletListHtml(text) {
   return `<ul class="postit-bullets">` + lines.map((l) => `<li>${escapeHtml(l)}</li>`).join("") + `</ul>`;
 }
 function taskDetailCard(e) {
-  const card = makeCard("postit");
   const editing = expandedTaskIds.has(e.id);
   // Default to sketch mode when reopening a task whose only content is ink (no bullet text yet).
   const sketching = editing && (sketchModeTaskIds.has(e.id) || (hasInk(e) && !(e.title && e.title.trim())));
+  const inPaperMode = sketching || hasInk(e);
+  // A sketched task's whole card is paper too — same reasoning as diary, no box-behind-paper.
+  const card = makeCard(inPaperMode ? `sketch-card paper-${paperOf(e.drawing)}` : "postit");
   let detail;
   if (editing && sketching) {
-    detail = `<div class="sketchpad-wrap">${penToolbarHtml()}<div class="sketchpad-frame"><canvas class="sketchpad" data-sketch="${e.id}"></canvas></div>
+    detail = `<div class="sketchpad-wrap">${penToolbarHtml(e.id)}<canvas class="sketchpad" data-sketch="${e.id}"></canvas>
       <div class="sketch-toolbar">
         <button type="button" class="sketch-btn" data-sketch-undo="${e.id}">undo</button>
         <button type="button" class="sketch-btn" data-sketch-clear="${e.id}">clear</button>
@@ -493,7 +495,7 @@ function taskDetailCard(e) {
   card.querySelectorAll("[data-mode-toggle]").forEach((el) => el.addEventListener("click", (ev) => {
     ev.stopPropagation();
     if (sketchModeTaskIds.has(e.id)) sketchModeTaskIds.delete(e.id);
-    else { sketchModeTaskIds.add(e.id); if (!e.drawing) e.drawing = { w: 0, h: 0, strokes: [] }; }
+    else { sketchModeTaskIds.add(e.id); if (!e.drawing) e.drawing = { w: 0, h: 0, strokes: [], paper: randomPaperStyle() }; }
     render();
   }));
   card.querySelectorAll("[data-sketch-done]").forEach((el) => el.addEventListener("click", (ev) => {
@@ -505,7 +507,7 @@ function taskDetailCard(e) {
   if (editing && sketching) {
     wirePenToolbar(card);
     const canvas = card.querySelector("canvas.sketchpad");
-    const ctl = initSketchpad(canvas, e.drawing, (d) => updateEntryDrawing(e.id, d));
+    const ctl = initSketchpad(canvas, e.drawing, (d) => updateEntryDrawing(e.id, d), () => revealPenPicker(card, e.id));
     card.querySelector("[data-sketch-undo]").addEventListener("click", (ev) => { ev.stopPropagation(); ctl.undo(); });
     card.querySelector("[data-sketch-clear]").addEventListener("click", (ev) => { ev.stopPropagation(); ctl.clear(); });
   }
@@ -568,14 +570,16 @@ function scratchCard() {
 
 function diaryCards() {
   return entries.filter((e) => e.type === "diary" && matchesFilter(e)).map((e) => {
-    const card = makeCard("diary");
-    card.dataset.entryId = e.id;
     const date = new Date(e.createdAt);
     const dateStr = date.toLocaleDateString("en-US", { month: "short", day: "numeric" }) + " · " + date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
     const sketching = editingSketchIds.has(e.id);
+    const inPaperMode = sketching || hasInk(e);
+    // A sketch's whole card IS the paper — date/tags sit directly on it, no card-behind-paper box.
+    const card = makeCard("diary" + (inPaperMode ? ` sketch-card paper-${paperOf(e.drawing)}` : ""));
+    card.dataset.entryId = e.id;
     let body;
     if (sketching) {
-      body = `<div class="sketchpad-wrap">${penToolbarHtml()}<div class="sketchpad-frame"><canvas class="sketchpad" data-sketch="${e.id}"></canvas></div>
+      body = `<div class="sketchpad-wrap">${penToolbarHtml(e.id)}<canvas class="sketchpad" data-sketch="${e.id}"></canvas>
         <div class="sketch-toolbar">
           <button type="button" class="sketch-btn" data-sketch-undo="${e.id}">undo</button>
           <button type="button" class="sketch-btn" data-sketch-clear="${e.id}">clear</button>
@@ -599,7 +603,7 @@ function diaryCards() {
     card.querySelectorAll("[data-sketch-toggle]").forEach((x) => x.addEventListener("click", (ev) => {
       ev.stopPropagation();
       if (editingSketchIds.has(e.id)) editingSketchIds.delete(e.id);
-      else { editingSketchIds.add(e.id); if (!e.drawing) e.drawing = { w: 0, h: 0, strokes: [] }; }
+      else { editingSketchIds.add(e.id); if (!e.drawing) e.drawing = { w: 0, h: 0, strokes: [], paper: randomPaperStyle() }; }
       render();
     }));
     card.querySelectorAll("[data-sketch-done]").forEach((x) => x.addEventListener("click", (ev) => {
@@ -610,7 +614,7 @@ function diaryCards() {
     if (sketching) {
       wirePenToolbar(card);
       const canvas = card.querySelector("canvas.sketchpad");
-      const ctl = initSketchpad(canvas, e.drawing, (d) => updateEntryDrawing(e.id, d));
+      const ctl = initSketchpad(canvas, e.drawing, (d) => updateEntryDrawing(e.id, d), () => revealPenPicker(card, e.id));
       card.querySelector("[data-sketch-undo]").addEventListener("click", (ev) => { ev.stopPropagation(); ctl.undo(); });
       card.querySelector("[data-sketch-clear]").addEventListener("click", (ev) => { ev.stopPropagation(); ctl.clear(); });
     }
@@ -661,6 +665,22 @@ function paletteFor(penId) {
 }
 let currentPen = "sanderling";
 let currentPenColor = INK_COLOR;
+
+// Each sketch gets a random paper style at creation, so a page of notes doesn't look uniform —
+// "aged" is the only one with the torn-edge/punched-hole treatment; the other three are plain
+// rectangles with just a different background. Picked once and stored on the drawing itself
+// (not re-rolled on every render) so a note doesn't change paper every time it redraws.
+const PAPER_STYLES = ["aged", "classic", "graph", "notecard"];
+function randomPaperStyle() {
+  return PAPER_STYLES[Math.floor(Math.random() * PAPER_STYLES.length)];
+}
+function paperOf(drawing) {
+  return (drawing && drawing.paper) || "aged"; // drawings saved before this feature default to the original look
+}
+// The pen/color picker only appears once she's actually touched the canvas with the Apple
+// Pencil this session — before that it's hidden so a sketch card is just paper, not a toolbar
+// sitting on top of paper. Once shown for a given entry it stays shown for that editing session.
+let pencilRevealedIds = new Set();
 
 // A stroke saved before pens existed is just a bare point array — treat it as a plain Sanderling
 // stroke in the app's ink color so old drawings keep rendering exactly as they did.
@@ -759,7 +779,7 @@ function sketchSvg(drawing, cls) {
     const blendStyle = preset.blend ? ` style="mix-blend-mode:${preset.blend}"` : "";
     return `<path d="${d}" fill="${color}" opacity="${alpha}"${blendStyle}/>${grainOverlay}`;
   }).join("");
-  return `<div class="sketch-view-frame"><svg class="${cls}" viewBox="0 0 ${drawing.w || 300} ${drawing.h || 200}" preserveAspectRatio="xMidYMin meet">${usesGrain ? SKETCH_GRAIN_DEFS : ""}${paths}</svg></div>`;
+  return `<svg class="${cls}" viewBox="0 0 ${drawing.w || 300} ${drawing.h || 200}" preserveAspectRatio="xMidYMin meet">${usesGrain ? SKETCH_GRAIN_DEFS : ""}${paths}</svg>`;
 }
 function hasInk(e) {
   return !!(e.drawing && e.drawing.strokes && e.drawing.strokes.length);
@@ -767,9 +787,16 @@ function hasInk(e) {
 function colorSwatchesHtml(penId) {
   return paletteFor(penId).map((c) => `<button type="button" class="pen-color${c.hex === currentPenColor ? " active" : ""}" data-pen-color="${c.hex}" style="background:${c.hex}" title="${c.name}"></button>`).join("");
 }
-function penToolbarHtml() {
+function penToolbarHtml(entryId) {
   const pens = PEN_ORDER.map((id) => `<button type="button" class="pen-btn${id === currentPen ? " active" : ""}" data-pen="${id}">${PEN_PRESETS[id].label}</button>`).join("");
-  return `<div class="pen-toolbar">${pens}</div><div class="pen-colors">${colorSwatchesHtml(currentPen)}</div>`;
+  const revealed = pencilRevealedIds.has(entryId);
+  return `<div class="pen-picker${revealed ? " revealed" : ""}" data-pen-picker="${entryId}">` +
+    `<div class="pen-toolbar">${pens}</div><div class="pen-colors">${colorSwatchesHtml(currentPen)}</div></div>`;
+}
+function revealPenPicker(card, entryId) {
+  pencilRevealedIds.add(entryId);
+  const el = card.querySelector(`[data-pen-picker="${entryId}"]`);
+  if (el) el.classList.add("revealed");
 }
 function wirePenToolbar(card) {
   // Only flips module-level state + toggles markup within this one toolbar — deliberately never
@@ -799,13 +826,14 @@ function wirePenToolbar(card) {
 // Wires pointer events onto a blank canvas for freehand drawing. Palm rejection is simple but
 // effective: while one pointer is actively drawing, any second pointer (a resting palm) is
 // ignored outright, and a stray touch right after the pencil lifts is ignored for half a second.
-function initSketchpad(canvas, drawing, onChange) {
+function initSketchpad(canvas, drawing, onChange, onPencilStart) {
   drawing = drawing || { w: 0, h: 0, strokes: [] };
   const ctx = canvas.getContext("2d");
   let strokes = (drawing.strokes || []).map(normalizeStroke);
   let current = null; // bare points array for the in-progress stroke; wrapped with the active pen/color once finished
   let activePointerId = null;
   let lastPenUpAt = 0;
+  let pencilStartFired = false;
 
   function resize() {
     const rect = canvas.getBoundingClientRect();
@@ -843,6 +871,7 @@ function initSketchpad(canvas, drawing, onChange) {
   function down(e) {
     if (activePointerId !== null) return;
     if (e.pointerType === "touch" && Date.now() - lastPenUpAt < 500) return;
+    if (e.pointerType === "pen" && !pencilStartFired) { pencilStartFired = true; onPencilStart && onPencilStart(); }
     activePointerId = e.pointerId;
     try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
     current = [localPoint(e)];
@@ -1062,7 +1091,7 @@ function buildBoardCards() {
     const addSketchTile = makeCard("mini addbox");
     addSketchTile.innerHTML = `<div class="meta"><span>+ new sketch</span></div>`;
     addSketchTile.addEventListener("click", () => {
-      const e = addEntry({ type: "diary", drawing: { w: 0, h: 0, strokes: [] } });
+      const e = addEntry({ type: "diary", drawing: { w: 0, h: 0, strokes: [], paper: randomPaperStyle() } });
       editingSketchIds.add(e.id);
       render();
     });

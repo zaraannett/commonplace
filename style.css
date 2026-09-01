@@ -286,6 +286,10 @@ canvas#band{display:block;width:100%;height:32px;margin-top:16px;border-radius:2
 
 /* ── handwriting (Apple Pencil / touch ink, diary + task post-its) ─── */
 .sketchpad-wrap{margin-top:8px;}
+/* Hidden until the Apple Pencil actually touches the canvas (see initSketchpad's onPencilStart) —
+   a sketch card should read as paper, not paper-with-a-toolbar, until she's actually drawing. */
+.pen-picker{display:none;}
+.pen-picker.revealed{display:block;}
 .pen-toolbar{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;}
 .pen-btn{
   background:var(--card);border:1px solid var(--line);border-radius:99px;padding:3px 10px;
@@ -297,47 +301,8 @@ canvas#band{display:block;width:100%;height:32px;margin-top:16px;border-radius:2
   width:18px;height:18px;border-radius:50%;border:1px solid rgba(40,35,28,.15);cursor:pointer;padding:0;
 }
 .pen-color.active{outline:1.5px solid var(--ink);outline-offset:2px;}
-/* A torn-out notebook page, not a rectangle: a jagged clip-path for the ripped top edge, a
-   punched-hole column down the left (masked out, not drawn — actually transparent), and a
-   warmer aged-paper tone. filter:drop-shadow (not box-shadow) so the lift actually follows the
-   torn silhouette instead of showing a rectangular shadow behind a torn shape. Lives on a
-   dedicated wrapper div, not the canvas/svg itself — CSS masking a live <canvas> or an <svg>
-   root directly is inconsistent across engines, a plain block div is the reliable case. */
-.sketchpad-frame,.sketch-view-frame{
-  background-color:#EFE3C6;
-  /* the 5 ring gradients draw a visible rim around each punched hole — true mask transparency
-     alone was nearly invisible against the card's own similarly-pale background, so the rim
-     gives each hole definition regardless of what's actually behind it. background-position
-     keeps those 5 layers at absolute coordinates (matching the mask below exactly) while still
-     shifting only the two ruled-line layers down clear of the torn top edge. */
-  background-image:
-    radial-gradient(circle at 18px 26px, transparent 4px, rgba(70,58,38,.6) 4px, rgba(70,58,38,.6) 7px, transparent 7px),
-    radial-gradient(circle at 18px 68px, transparent 4px, rgba(70,58,38,.6) 4px, rgba(70,58,38,.6) 7px, transparent 7px),
-    radial-gradient(circle at 18px 110px, transparent 4px, rgba(70,58,38,.6) 4px, rgba(70,58,38,.6) 7px, transparent 7px),
-    radial-gradient(circle at 18px 152px, transparent 4px, rgba(70,58,38,.6) 4px, rgba(70,58,38,.6) 7px, transparent 7px),
-    radial-gradient(circle at 18px 194px, transparent 4px, rgba(70,58,38,.6) 4px, rgba(70,58,38,.6) 7px, transparent 7px),
-    linear-gradient(to right, transparent 40px, rgba(194,94,124,.3) 40px, rgba(194,94,124,.3) 41px, transparent 41px),
-    repeating-linear-gradient(to bottom, transparent, transparent 25px, rgba(120,108,80,.28) 25px, rgba(120,108,80,.28) 26px);
-  background-position:0 0, 0 0, 0 0, 0 0, 0 0, 0 16px, 0 16px;
-  clip-path:polygon(0% 5%,4% 1%,9% 6%,14% 2%,19% 7%,25% 1%,31% 5%,37% 0%,43% 6%,49% 2%,55% 7%,61% 1%,67% 5%,73% 0%,79% 6%,85% 2%,91% 7%,96% 1%,100% 5%,100% 100%,0% 100%);
-  mask-image:
-    radial-gradient(circle 4px at 18px 26px, transparent 99%, black 100%),
-    radial-gradient(circle 4px at 18px 68px, transparent 99%, black 100%),
-    radial-gradient(circle 4px at 18px 110px, transparent 99%, black 100%),
-    radial-gradient(circle 4px at 18px 152px, transparent 99%, black 100%),
-    radial-gradient(circle 4px at 18px 194px, transparent 99%, black 100%);
-  -webkit-mask-image:
-    radial-gradient(circle 4px at 18px 26px, transparent 99%, black 100%),
-    radial-gradient(circle 4px at 18px 68px, transparent 99%, black 100%),
-    radial-gradient(circle 4px at 18px 110px, transparent 99%, black 100%),
-    radial-gradient(circle 4px at 18px 152px, transparent 99%, black 100%),
-    radial-gradient(circle 4px at 18px 194px, transparent 99%, black 100%);
-  filter:drop-shadow(0 3px 4px rgba(40,35,28,.16));
-}
-.sketchpad-frame{height:220px;}
-.card.postit .sketchpad-frame{height:150px;background-color:#F2E7CC;}
-.card.postit .sketch-view-frame{background-color:#F2E7CC;}
-.sketchpad{display:block;width:100%;height:100%;touch-action:none;cursor:crosshair;}
+.sketchpad{display:block;width:100%;height:220px;touch-action:none;cursor:crosshair;}
+.card.postit .sketchpad{height:150px;}
 .sketch-toolbar{display:flex;gap:14px;margin-top:7px;}
 .sketch-btn{
   background:none;border:none;padding:0;color:var(--soft);cursor:pointer;
@@ -347,6 +312,60 @@ canvas#band{display:block;width:100%;height:32px;margin-top:16px;border-radius:2
 .sketch-btn.mode-switch{display:block;margin-top:8px;}
 .sketch-view{display:block;width:100%;height:auto;max-height:260px;}
 .card.postit .sketch-view{max-height:170px;}
+
+/* ── paper styles — a sketch's whole card IS the paper (date/tags sit right on it), picked
+   randomly per drawing so a page of notes doesn't all look the same. Placed after .postit/.butter/
+   etc. so equal-specificity `.card.paper-X` wins the cascade over those base card looks. ── */
+.card.sketch-card{transform:none !important;} /* paper cards sit flat — the tilt/fold reads oddly on a "real" torn page */
+.card.postit.sketch-card::after{display:none;} /* postit's folded-corner triangle */
+.card.paper-classic{
+  background:#FEFDF9;border:1px solid #E4E0D4;box-shadow:0 1px 0 rgba(40,35,28,.06);
+  background-image:
+    linear-gradient(to right, transparent 39px, rgba(190,60,60,.5) 39px, rgba(190,60,60,.5) 40px, transparent 40px),
+    repeating-linear-gradient(to bottom, transparent, transparent 25px, rgba(60,100,180,.4) 25px, rgba(60,100,180,.4) 26px);
+  background-position:0 30px;
+}
+.card.paper-graph{
+  background-color:#FBFAF3;border:1px solid #D6D9EC;box-shadow:0 1px 0 rgba(40,35,28,.06);
+  background-image:
+    repeating-linear-gradient(0deg, rgba(107,119,191,.18) 0 1px, transparent 1px 18px),
+    repeating-linear-gradient(90deg, rgba(107,119,191,.18) 0 1px, transparent 1px 18px);
+}
+.card.paper-notecard{
+  background:#FBF8EF;border:1px solid #E7E0CC;box-shadow:0 2px 4px rgba(40,35,28,.1);
+}
+.card.paper-aged{
+  /* A torn-out page, not a rectangle: a jagged clip-path for the ripped top edge, a punched-hole
+     column down the left, and a warmer aged tone. The 5 ring gradients draw a visible rim around
+     each hole — true mask transparency alone barely read against a similarly-pale background, so
+     the rim gives each hole definition while the mask still keeps its center genuinely see-through.
+     filter:drop-shadow (not box-shadow) so the lift follows the torn silhouette, not a rectangle
+     behind it. Extra top padding clears the ragged band so the meta row never sits in it. */
+  background-color:#EFE3C6;border:none;box-shadow:none;padding-top:26px;padding-left:38px;
+  background-image:
+    radial-gradient(circle at 18px 36px, transparent 4px, rgba(70,58,38,.6) 4px, rgba(70,58,38,.6) 7px, transparent 7px),
+    radial-gradient(circle at 18px 78px, transparent 4px, rgba(70,58,38,.6) 4px, rgba(70,58,38,.6) 7px, transparent 7px),
+    radial-gradient(circle at 18px 120px, transparent 4px, rgba(70,58,38,.6) 4px, rgba(70,58,38,.6) 7px, transparent 7px),
+    radial-gradient(circle at 18px 162px, transparent 4px, rgba(70,58,38,.6) 4px, rgba(70,58,38,.6) 7px, transparent 7px),
+    radial-gradient(circle at 18px 204px, transparent 4px, rgba(70,58,38,.6) 4px, rgba(70,58,38,.6) 7px, transparent 7px),
+    linear-gradient(to right, transparent 40px, rgba(194,94,124,.3) 40px, rgba(194,94,124,.3) 41px, transparent 41px),
+    repeating-linear-gradient(to bottom, transparent, transparent 25px, rgba(120,108,80,.28) 25px, rgba(120,108,80,.28) 26px);
+  background-position:0 0, 0 0, 0 0, 0 0, 0 0, 0 26px, 0 26px;
+  clip-path:polygon(0% 3%,4% 0.5%,9% 3.5%,14% 1%,19% 4%,25% 0.5%,31% 3%,37% 0%,43% 3.5%,49% 1%,55% 4%,61% 0.5%,67% 3%,73% 0%,79% 3.5%,85% 1%,91% 4%,96% 0.5%,100% 3%,100% 100%,0% 100%);
+  mask-image:
+    radial-gradient(circle 4px at 18px 36px, transparent 99%, black 100%),
+    radial-gradient(circle 4px at 18px 78px, transparent 99%, black 100%),
+    radial-gradient(circle 4px at 18px 120px, transparent 99%, black 100%),
+    radial-gradient(circle 4px at 18px 162px, transparent 99%, black 100%),
+    radial-gradient(circle 4px at 18px 204px, transparent 99%, black 100%);
+  -webkit-mask-image:
+    radial-gradient(circle 4px at 18px 36px, transparent 99%, black 100%),
+    radial-gradient(circle 4px at 18px 78px, transparent 99%, black 100%),
+    radial-gradient(circle 4px at 18px 120px, transparent 99%, black 100%),
+    radial-gradient(circle 4px at 18px 162px, transparent 99%, black 100%),
+    radial-gradient(circle 4px at 18px 204px, transparent 99%, black 100%);
+  filter:drop-shadow(0 3px 4px rgba(40,35,28,.16));
+}
 .scribble{font-family:'Caveat',cursive;font-size:20px;line-height:1.45;}
 
 .cal{width:100%;border-collapse:collapse;table-layout:fixed;margin-top:4px;}
