@@ -467,7 +467,8 @@ function taskDetailCard(e) {
   const card = makeCard(inPaperMode ? `sketch-card ${paperClassOf(e.drawing)}` : "postit");
   let detail;
   if (editing && sketching) {
-    detail = `<div class="sketchpad-wrap">${penToolbarHtml(e.id)}<canvas class="sketchpad" style="height:${sketchCanvasHeight(e.type, e.drawing)}px" data-sketch="${e.id}"></canvas>
+    detail = `<div class="sketchpad-wrap"><canvas class="sketchpad" style="height:${sketchCanvasHeight(e.type, e.drawing)}px" data-sketch="${e.id}"></canvas>
+      ${penToolbarHtml(e.id)}
       <div class="sketch-toolbar">
         <button type="button" class="sketch-btn" data-sketch-undo="${e.id}">undo</button>
         <button type="button" class="sketch-btn" data-sketch-clear="${e.id}">clear</button>
@@ -478,7 +479,7 @@ function taskDetailCard(e) {
     detail = `<textarea class="postit-editor" data-detail-input="${e.id}" placeholder="– one point per line…">${escapeHtml(e.title || "")}</textarea>
       <button type="button" class="sketch-btn mode-switch" data-mode-toggle="${e.id}">✎ draw instead</button>`;
   } else if (hasInk(e)) {
-    detail = `<div class="postit-bullets-wrap" data-detail-toggle="${e.id}">${sketchSvg(e.drawing, "sketch-view")}</div>`;
+    detail = `<div class="postit-bullets-wrap" data-detail-toggle="${e.id}">${renderStaticImage(e.drawing, "sketch-view")}</div>`;
   } else {
     detail = `<div class="postit-bullets-wrap" data-detail-toggle="${e.id}">${bulletListHtml(e.title)}</div>`;
   }
@@ -579,14 +580,15 @@ function diaryCards() {
     card.dataset.entryId = e.id;
     let body;
     if (sketching) {
-      body = `<div class="sketchpad-wrap">${penToolbarHtml(e.id)}<canvas class="sketchpad" style="height:${sketchCanvasHeight(e.type, e.drawing)}px" data-sketch="${e.id}"></canvas>
+      body = `<div class="sketchpad-wrap"><canvas class="sketchpad" style="height:${sketchCanvasHeight(e.type, e.drawing)}px" data-sketch="${e.id}"></canvas>
+        ${penToolbarHtml(e.id)}
         <div class="sketch-toolbar">
           <button type="button" class="sketch-btn" data-sketch-undo="${e.id}">undo</button>
           <button type="button" class="sketch-btn" data-sketch-clear="${e.id}">clear</button>
           <button type="button" class="sketch-btn" data-sketch-done="${e.id}">done</button>
         </div></div>`;
     } else if (hasInk(e)) {
-      body = sketchSvg(e.drawing, "sketch-view");
+      body = renderStaticImage(e.drawing, "sketch-view");
     } else {
       body = `<p>${escapeHtml(e.body)}</p>`;
     }
@@ -645,13 +647,18 @@ const PEN_PRESETS = {
   sanderling: { label: "Sanderling", size: 7, thinning: 0.85, minAlpha: 1, maxAlpha: 1, grain: 0.18 },
   bellerive: { label: "Bellerive", size: 6, thinning: 0.92, minAlpha: 0.55, maxAlpha: 1, grain: 0.4 },
   liffey: { label: "Liffey", size: 15, thinning: 0.85, minAlpha: 1, maxAlpha: 1, grain: 0.48 },
-  highlighter: { label: "Highlighter", size: 26, thinning: 0.25, minAlpha: 0.5, maxAlpha: 0.5, grain: 0.2, blend: "multiply" },
+  // No grain — it's a wide, mostly-transparent wash, and the same speckle texture that reads as
+  // "paper grain" on a thin ink line just looked like grit smeared across a big soft area.
+  highlighter: { label: "Highlighter", size: 26, thinning: 0.25, minAlpha: 0.5, maxAlpha: 0.5, grain: 0, blend: "multiply" },
   // Graphite pencil: heavier grain than any pen (that's most of what reads as "pencil" rather
   // than "pen"), gentler pressure-to-width response, and opacity that varies with pressure like
   // Bellerive — light strokes look genuinely light, not just thin.
   pencil: { label: "Pencil", size: 5, thinning: 0.5, minAlpha: 0.7, maxAlpha: 0.95, grain: 0.6 },
+  // Erases rather than draws — paintStroke special-cases `erase` to punch a real hole
+  // (destination-out) instead of filling with a color.
+  eraser: { label: "Eraser", size: 22, thinning: 0.4, minAlpha: 1, maxAlpha: 1, grain: 0, erase: true },
 };
-const PEN_ORDER = ["sanderling", "bellerive", "liffey", "pencil", "highlighter"];
+const PEN_ORDER = ["sanderling", "bellerive", "liffey", "pencil", "highlighter", "eraser"];
 // Size buttons multiply a pen's own base `size` rather than replacing it, so Liffey-small and
 // Sanderling-large stay relatively true to each pen's own character instead of all converging on
 // the same three widths.
@@ -759,12 +766,29 @@ function strokeToPath(points, preset, sizeKey) {
     // recorded at a constant 0.5 (see localPoint below), so simulate a natural taper for those
     // instead of drawing a uniform-width line.
     const simulatePressure = !points.some((pt) => pt[2] !== 0.5);
-    return svgPathFromOutline(getStroke(points, { size: p.size * sizeMult, thinning: p.thinning, smoothing: 0.55, streamline: 0.55, simulatePressure }));
+    // Tapering the start/end down to a point regardless of pressure — without this, pressing
+    // hard right as you lift the pencil ends the stroke at full (pressure-scaled) width with a
+    // round cap, which reads as a blob dropped on the page rather than a pen lifting off it.
+    // Clamped to a fraction of the stroke's own length — a fixed size-scaled taper distance
+    // could exceed a short stroke entirely (start-taper and end-taper zones overlapping and
+    // collapsing the whole thing to near-nothing), which is exactly what silently neutered short
+    // eraser swipes with a big pen size selected.
+    const rawTaper = 14 * sizeMult;
+    const taper = Math.min(rawTaper, polylineLength(points) * 0.4);
+    return svgPathFromOutline(getStroke(points, {
+      size: p.size * sizeMult, thinning: p.thinning, smoothing: 0.55, streamline: 0.55, simulatePressure,
+      start: { taper, cap: true }, end: { taper, cap: true },
+    }));
   }
   return "M " + points.map((pt) => pt[0] + " " + pt[1]).join(" L ");
 }
 function avgPressure(points) {
   return points.reduce((sum, p) => sum + p[2], 0) / points.length;
+}
+function polylineLength(points) {
+  let len = 0;
+  for (let i = 1; i < points.length; i++) len += Math.hypot(points[i][0] - points[i - 1][0], points[i][1] - points[i - 1][1]);
+  return len;
 }
 
 // A small tileable speckle texture, generated once and reused as-is for both the live canvas
@@ -791,8 +815,20 @@ function paintStroke(ctx, stroke) {
   const d = strokeToPath(stroke.points, preset, stroke.size);
   if (!d) return;
   const path = new Path2D(d);
-  const alpha = preset.minAlpha + (preset.maxAlpha - preset.minAlpha) * avgPressure(stroke.points);
   ctx.save();
+  if (preset.erase) {
+    // Actually removes pixels rather than drawing over them — since redraw() replays every
+    // stroke from scratch in order every time, this only ever erases ink from strokes earlier
+    // in that same replay, never ink added after it. Color is irrelevant to destination-out;
+    // only the shape/alpha of what's filled matters.
+    ctx.globalCompositeOperation = "destination-out";
+    ctx.fillStyle = "#000";
+    ctx.globalAlpha = 1;
+    ctx.fill(path);
+    ctx.restore();
+    return;
+  }
+  const alpha = preset.minAlpha + (preset.maxAlpha - preset.minAlpha) * avgPressure(stroke.points);
   ctx.globalCompositeOperation = preset.blend || "source-over";
   ctx.fillStyle = stroke.color || INK_COLOR;
   ctx.globalAlpha = alpha;
@@ -805,30 +841,24 @@ function paintStroke(ctx, stroke) {
   }
   ctx.restore();
 }
-const SKETCH_GRAIN_DEFS = `<defs><pattern id="sketchGrain" width="48" height="48" patternUnits="userSpaceOnUse"><image href="${grainCanvas().toDataURL()}" width="48" height="48"/></pattern></defs>`;
-function sketchSvg(drawing, cls) {
+// The saved (non-editing) view used to be reconstructed as a parallel SVG-path implementation —
+// duplicating paintStroke's blend/grain/alpha logic, and with no way to represent an eraser's
+// destination-out at all (SVG has no equivalent that composites against just the earlier
+// siblings). Rendering it as a real canvas and replaying the exact same paintStroke() sequence
+// used while drawing means there's one rendering path, not two, and erasing "just works" in the
+// saved view for free. Traded infinite vector crispness for a 2x-resolution raster image, which
+// reads as crisp as this UI ever needed anyway.
+function renderStaticImage(drawing, cls) {
   if (!drawing || !drawing.strokes || !drawing.strokes.length) return "";
-  let usesGrain = false;
-  const paths = drawing.strokes.map((raw) => {
-    const stroke = normalizeStroke(raw);
-    const preset = PEN_PRESETS[stroke.tool] || PEN_PRESETS.sanderling;
-    if (!stroke.points || stroke.points.length < 2) return "";
-    const color = stroke.color || INK_COLOR;
-    if (!getStroke) {
-      return `<path d="M ${stroke.points.map((pt) => pt[0] + " " + pt[1]).join(" L ")}" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>`;
-    }
-    const d = strokeToPath(stroke.points, preset, stroke.size);
-    if (!d) return "";
-    const alpha = preset.minAlpha + (preset.maxAlpha - preset.minAlpha) * avgPressure(stroke.points);
-    let grainOverlay = "";
-    if (preset.grain > 0) {
-      usesGrain = true;
-      grainOverlay = `<path d="${d}" fill="url(#sketchGrain)" opacity="${preset.grain}" style="mix-blend-mode:multiply"/>`;
-    }
-    const blendStyle = preset.blend ? ` style="mix-blend-mode:${preset.blend}"` : "";
-    return `<path d="${d}" fill="${color}" opacity="${alpha}"${blendStyle}/>${grainOverlay}`;
-  }).join("");
-  return `<svg class="${cls}" viewBox="0 0 ${drawing.w || 300} ${drawing.h || 200}" preserveAspectRatio="xMidYMin meet">${usesGrain ? SKETCH_GRAIN_DEFS : ""}${paths}</svg>`;
+  const dpr = 2;
+  const w = drawing.w || 300, h = drawing.h || 200;
+  const c = document.createElement("canvas");
+  c.width = Math.max(1, Math.round(w * dpr));
+  c.height = Math.max(1, Math.round(h * dpr));
+  const ctx = c.getContext("2d");
+  ctx.scale(dpr, dpr);
+  drawing.strokes.map(normalizeStroke).forEach((s) => paintStroke(ctx, s));
+  return `<img class="${cls}" src="${c.toDataURL()}" width="${w}" height="${h}" alt=""/>`;
 }
 function hasInk(e) {
   return !!(e.drawing && e.drawing.strokes && e.drawing.strokes.length);
@@ -842,9 +872,10 @@ function penSizesHtml() {
 function penToolbarHtml(entryId) {
   const pens = PEN_ORDER.map((id) => `<button type="button" class="pen-btn${id === currentPen ? " active" : ""}" data-pen="${id}">${PEN_PRESETS[id].label}</button>`).join("");
   const revealed = pencilRevealedIds.has(entryId);
+  const isEraser = PEN_PRESETS[currentPen] && PEN_PRESETS[currentPen].erase;
   return `<div class="pen-picker${revealed ? " revealed" : ""}" data-pen-picker="${entryId}">` +
     `<div class="pen-toolbar">${pens}<span class="pen-sizes">${penSizesHtml()}</span></div>` +
-    `<div class="pen-colors">${colorSwatchesHtml(currentPen)}</div></div>`;
+    `<div class="pen-colors"${isEraser ? ' style="display:none"' : ""}>${colorSwatchesHtml(currentPen)}</div></div>`;
 }
 function revealPenPicker(card, entryId) {
   pencilRevealedIds.add(entryId);
@@ -871,6 +902,7 @@ function wirePenToolbar(card) {
     const palette = paletteFor(currentPen);
     if (!palette.some((c) => c.hex === currentPenColor)) currentPenColor = palette[0].hex;
     colorsEl.innerHTML = colorSwatchesHtml(currentPen);
+    colorsEl.style.display = PEN_PRESETS[currentPen] && PEN_PRESETS[currentPen].erase ? "none" : "";
     wireColorButtons();
   }));
   wireColorButtons();

@@ -289,7 +289,7 @@ canvas#band{display:block;width:100%;height:32px;margin-top:16px;border-radius:2
 /* Hidden until the Apple Pencil actually touches the canvas (see initSketchpad's onPencilStart) —
    a sketch card should read as paper, not paper-with-a-toolbar, until she's actually drawing. */
 .pen-picker{display:none;}
-.pen-picker.revealed{display:block;}
+.pen-picker.revealed{display:block;margin-top:8px;}
 .pen-toolbar{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;}
 .pen-btn{
   background:var(--card);border:1px solid var(--line);border-radius:99px;padding:3px 10px;
