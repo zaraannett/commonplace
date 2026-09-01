@@ -465,7 +465,7 @@ function taskDetailCard(e) {
   const sketching = editing && (sketchModeTaskIds.has(e.id) || (hasInk(e) && !(e.title && e.title.trim())));
   let detail;
   if (editing && sketching) {
-    detail = `<div class="sketchpad-wrap">${penToolbarHtml()}<canvas class="sketchpad small" data-sketch="${e.id}"></canvas>
+    detail = `<div class="sketchpad-wrap">${penToolbarHtml()}<div class="sketchpad-frame"><canvas class="sketchpad" data-sketch="${e.id}"></canvas></div>
       <div class="sketch-toolbar">
         <button type="button" class="sketch-btn" data-sketch-undo="${e.id}">undo</button>
         <button type="button" class="sketch-btn" data-sketch-clear="${e.id}">clear</button>
@@ -575,7 +575,7 @@ function diaryCards() {
     const sketching = editingSketchIds.has(e.id);
     let body;
     if (sketching) {
-      body = `<div class="sketchpad-wrap">${penToolbarHtml()}<canvas class="sketchpad" data-sketch="${e.id}"></canvas>
+      body = `<div class="sketchpad-wrap">${penToolbarHtml()}<div class="sketchpad-frame"><canvas class="sketchpad" data-sketch="${e.id}"></canvas></div>
         <div class="sketch-toolbar">
           <button type="button" class="sketch-btn" data-sketch-undo="${e.id}">undo</button>
           <button type="button" class="sketch-btn" data-sketch-clear="${e.id}">clear</button>
@@ -759,7 +759,7 @@ function sketchSvg(drawing, cls) {
     const blendStyle = preset.blend ? ` style="mix-blend-mode:${preset.blend}"` : "";
     return `<path d="${d}" fill="${color}" opacity="${alpha}"${blendStyle}/>${grainOverlay}`;
   }).join("");
-  return `<svg class="${cls}" viewBox="0 0 ${drawing.w || 300} ${drawing.h || 200}" preserveAspectRatio="xMidYMin meet">${usesGrain ? SKETCH_GRAIN_DEFS : ""}${paths}</svg>`;
+  return `<div class="sketch-view-frame"><svg class="${cls}" viewBox="0 0 ${drawing.w || 300} ${drawing.h || 200}" preserveAspectRatio="xMidYMin meet">${usesGrain ? SKETCH_GRAIN_DEFS : ""}${paths}</svg></div>`;
 }
 function hasInk(e) {
   return !!(e.drawing && e.drawing.strokes && e.drawing.strokes.length);

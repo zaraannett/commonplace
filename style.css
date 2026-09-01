@@ -297,19 +297,47 @@ canvas#band{display:block;width:100%;height:32px;margin-top:16px;border-radius:2
   width:18px;height:18px;border-radius:50%;border:1px solid rgba(40,35,28,.15);cursor:pointer;padding:0;
 }
 .pen-color.active{outline:1.5px solid var(--ink);outline-offset:2px;}
-.sketchpad,.sketch-view{
-  background-color:rgba(255,255,255,.5);
+/* A torn-out notebook page, not a rectangle: a jagged clip-path for the ripped top edge, a
+   punched-hole column down the left (masked out, not drawn — actually transparent), and a
+   warmer aged-paper tone. filter:drop-shadow (not box-shadow) so the lift actually follows the
+   torn silhouette instead of showing a rectangular shadow behind a torn shape. Lives on a
+   dedicated wrapper div, not the canvas/svg itself — CSS masking a live <canvas> or an <svg>
+   root directly is inconsistent across engines, a plain block div is the reliable case. */
+.sketchpad-frame,.sketch-view-frame{
+  background-color:#EFE3C6;
+  /* the 5 ring gradients draw a visible rim around each punched hole — true mask transparency
+     alone was nearly invisible against the card's own similarly-pale background, so the rim
+     gives each hole definition regardless of what's actually behind it. background-position
+     keeps those 5 layers at absolute coordinates (matching the mask below exactly) while still
+     shifting only the two ruled-line layers down clear of the torn top edge. */
   background-image:
-    linear-gradient(to right, transparent 33px, rgba(194,94,124,.35) 33px, rgba(194,94,124,.35) 34px, transparent 34px),
-    repeating-linear-gradient(to bottom, transparent, transparent 25px, rgba(221,213,196,.7) 25px, rgba(221,213,196,.7) 26px);
-  background-position:0 2px;
+    radial-gradient(circle at 18px 26px, transparent 4px, rgba(70,58,38,.6) 4px, rgba(70,58,38,.6) 7px, transparent 7px),
+    radial-gradient(circle at 18px 68px, transparent 4px, rgba(70,58,38,.6) 4px, rgba(70,58,38,.6) 7px, transparent 7px),
+    radial-gradient(circle at 18px 110px, transparent 4px, rgba(70,58,38,.6) 4px, rgba(70,58,38,.6) 7px, transparent 7px),
+    radial-gradient(circle at 18px 152px, transparent 4px, rgba(70,58,38,.6) 4px, rgba(70,58,38,.6) 7px, transparent 7px),
+    radial-gradient(circle at 18px 194px, transparent 4px, rgba(70,58,38,.6) 4px, rgba(70,58,38,.6) 7px, transparent 7px),
+    linear-gradient(to right, transparent 40px, rgba(194,94,124,.3) 40px, rgba(194,94,124,.3) 41px, transparent 41px),
+    repeating-linear-gradient(to bottom, transparent, transparent 25px, rgba(120,108,80,.28) 25px, rgba(120,108,80,.28) 26px);
+  background-position:0 0, 0 0, 0 0, 0 0, 0 0, 0 16px, 0 16px;
+  clip-path:polygon(0% 5%,4% 1%,9% 6%,14% 2%,19% 7%,25% 1%,31% 5%,37% 0%,43% 6%,49% 2%,55% 7%,61% 1%,67% 5%,73% 0%,79% 6%,85% 2%,91% 7%,96% 1%,100% 5%,100% 100%,0% 100%);
+  mask-image:
+    radial-gradient(circle 4px at 18px 26px, transparent 99%, black 100%),
+    radial-gradient(circle 4px at 18px 68px, transparent 99%, black 100%),
+    radial-gradient(circle 4px at 18px 110px, transparent 99%, black 100%),
+    radial-gradient(circle 4px at 18px 152px, transparent 99%, black 100%),
+    radial-gradient(circle 4px at 18px 194px, transparent 99%, black 100%);
+  -webkit-mask-image:
+    radial-gradient(circle 4px at 18px 26px, transparent 99%, black 100%),
+    radial-gradient(circle 4px at 18px 68px, transparent 99%, black 100%),
+    radial-gradient(circle 4px at 18px 110px, transparent 99%, black 100%),
+    radial-gradient(circle 4px at 18px 152px, transparent 99%, black 100%),
+    radial-gradient(circle 4px at 18px 194px, transparent 99%, black 100%);
+  filter:drop-shadow(0 3px 4px rgba(40,35,28,.16));
 }
-.sketchpad{
-  display:block;width:100%;height:220px;border:1px dashed var(--line);border-radius:2px;
-  touch-action:none;cursor:crosshair;
-}
-.card.postit .sketchpad{height:150px;border-color:rgba(40,35,28,.18);}
-.card.postit .sketchpad,.card.postit .sketch-view{background-color:rgba(255,255,255,.55);}
+.sketchpad-frame{height:220px;}
+.card.postit .sketchpad-frame{height:150px;background-color:#F2E7CC;}
+.card.postit .sketch-view-frame{background-color:#F2E7CC;}
+.sketchpad{display:block;width:100%;height:100%;touch-action:none;cursor:crosshair;}
 .sketch-toolbar{display:flex;gap:14px;margin-top:7px;}
 .sketch-btn{
   background:none;border:none;padding:0;color:var(--soft);cursor:pointer;
