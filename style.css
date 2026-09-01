@@ -335,35 +335,34 @@ canvas#band{display:block;width:100%;height:32px;margin-top:16px;border-radius:2
   background:#FBF8EF;border:1px solid #E7E0CC;box-shadow:0 2px 4px rgba(40,35,28,.1);
 }
 .card.paper-aged{
-  /* A torn-out page, not a rectangle: a jagged clip-path for the ripped top edge, a punched-hole
-     column down the left, and a warmer aged tone. The 5 ring gradients draw a visible rim around
-     each hole — true mask transparency alone barely read against a similarly-pale background, so
-     the rim gives each hole definition while the mask still keeps its center genuinely see-through.
+  /* A torn-out page, not a rectangle: an irregular clip-path for the ripped top edge, a
+     punched-hole column down the left, and a warmer aged tone.
+     The holes are ONE hole+ring tile, repeated down the height via background-size+repeat-y —
+     not several hardcoded Y positions — so they're always evenly spaced and never get cut off
+     partway, whatever height a given card actually ends up. mask-image uses the exact same
+     tile/size/repeat so the true see-through cutout lines up perfectly with the drawn rim.
      filter:drop-shadow (not box-shadow) so the lift follows the torn silhouette, not a rectangle
      behind it. Extra top padding clears the ragged band so the meta row never sits in it. */
-  background-color:#EFE3C6;border:none;box-shadow:none;padding-top:26px;padding-left:38px;
+  background-color:#EFE3C6;border:none;box-shadow:none;padding-top:28px;padding-left:38px;
+  /* The hole/ring tile is sized 100% WIDE (not just as wide as the hole column) so tiling it
+     vertically doesn't mask away everything to the right of the holes — a mask/background tile
+     narrower than the element leaves the uncovered area transparent, which was cutting the whole
+     card down to a sliver. The circle sits at a fixed 18px from the left within that full-width
+     tile; everything past its ring is solid, so the "page" stays intact across the rest of the
+     width. */
   background-image:
-    radial-gradient(circle at 18px 36px, transparent 4px, rgba(70,58,38,.6) 4px, rgba(70,58,38,.6) 7px, transparent 7px),
-    radial-gradient(circle at 18px 78px, transparent 4px, rgba(70,58,38,.6) 4px, rgba(70,58,38,.6) 7px, transparent 7px),
-    radial-gradient(circle at 18px 120px, transparent 4px, rgba(70,58,38,.6) 4px, rgba(70,58,38,.6) 7px, transparent 7px),
-    radial-gradient(circle at 18px 162px, transparent 4px, rgba(70,58,38,.6) 4px, rgba(70,58,38,.6) 7px, transparent 7px),
-    radial-gradient(circle at 18px 204px, transparent 4px, rgba(70,58,38,.6) 4px, rgba(70,58,38,.6) 7px, transparent 7px),
+    radial-gradient(circle at 18px 29px, transparent 4px, rgba(70,58,38,.6) 4px, rgba(70,58,38,.6) 7px, transparent 7px),
     linear-gradient(to right, transparent 40px, rgba(194,94,124,.3) 40px, rgba(194,94,124,.3) 41px, transparent 41px),
     repeating-linear-gradient(to bottom, transparent, transparent 25px, rgba(120,108,80,.28) 25px, rgba(120,108,80,.28) 26px);
-  background-position:0 0, 0 0, 0 0, 0 0, 0 0, 0 26px, 0 26px;
-  clip-path:polygon(0% 3%,4% 0.5%,9% 3.5%,14% 1%,19% 4%,25% 0.5%,31% 3%,37% 0%,43% 3.5%,49% 1%,55% 4%,61% 0.5%,67% 3%,73% 0%,79% 3.5%,85% 1%,91% 4%,96% 0.5%,100% 3%,100% 100%,0% 100%);
-  mask-image:
-    radial-gradient(circle 4px at 18px 36px, transparent 99%, black 100%),
-    radial-gradient(circle 4px at 18px 78px, transparent 99%, black 100%),
-    radial-gradient(circle 4px at 18px 120px, transparent 99%, black 100%),
-    radial-gradient(circle 4px at 18px 162px, transparent 99%, black 100%),
-    radial-gradient(circle 4px at 18px 204px, transparent 99%, black 100%);
-  -webkit-mask-image:
-    radial-gradient(circle 4px at 18px 36px, transparent 99%, black 100%),
-    radial-gradient(circle 4px at 18px 78px, transparent 99%, black 100%),
-    radial-gradient(circle 4px at 18px 120px, transparent 99%, black 100%),
-    radial-gradient(circle 4px at 18px 162px, transparent 99%, black 100%),
-    radial-gradient(circle 4px at 18px 204px, transparent 99%, black 100%);
+  background-size:100% 58px, auto, auto;
+  background-repeat:repeat-y, repeat, repeat;
+  background-position:0 0, 0 28px, 0 28px;
+  clip-path:polygon(0% 2%,2% 5%,5% 1%,7% 6%,10% 3%,12% 7%,16% 2%,19% 8%,21% 4%,25% 6%,28% 1%,31% 5%,35% 2%,38% 7%,42% 3%,45% 5%,49% 1%,52% 6%,56% 3%,59% 8%,63% 2%,66% 5%,70% 1%,73% 7%,77% 3%,80% 6%,84% 2%,87% 5%,91% 1%,94% 7%,97% 3%,100% 5%,100% 100%,0% 100%);
+  mask-image:radial-gradient(circle at 18px 29px, transparent 4px, black 4px);
+  -webkit-mask-image:radial-gradient(circle at 18px 29px, transparent 4px, black 4px);
+  mask-size:100% 58px; -webkit-mask-size:100% 58px;
+  mask-repeat:repeat-y; -webkit-mask-repeat:repeat-y;
+  mask-position:0 0; -webkit-mask-position:0 0;
   filter:drop-shadow(0 3px 4px rgba(40,35,28,.16));
 }
 .scribble{font-family:'Caveat',cursive;font-size:20px;line-height:1.45;}
