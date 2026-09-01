@@ -280,6 +280,26 @@ function allTags() {
 function tagSpan(tag) {
   return `<span class="tag ${colorFor(tag)}" data-tag="${escapeHtml(tag)}">#${escapeHtml(tag)}</span>`;
 }
+// Same parsing as the capture modal's tag field (space/comma-separated, # stripped, lowercased)
+// so typing "family, trip" in one go adds both — not just a single tag per prompt.
+function addTagsToEntry(id) {
+  const e = entries.find((x) => x.id === id);
+  if (!e) return;
+  const input = prompt("Add tag(s) — separate with spaces or commas:");
+  if (!input || !input.trim()) return;
+  const newTags = input.split(/[\s,]+/).map((t) => t.replace(/^#/, "").toLowerCase()).filter(Boolean);
+  const before = e.tags.length;
+  newTags.forEach((t) => { if (!e.tags.includes(t)) e.tags.push(t); });
+  if (e.tags.length === before) return;
+  render();
+  db.from("entries").update({ tags: e.tags }).eq("id", id).then(({ error }) => { if (error) console.error("update failed", error); });
+}
+function wireAddTag(card) {
+  card.querySelectorAll("[data-addtag]").forEach((x) => x.addEventListener("click", (ev) => {
+    ev.stopPropagation();
+    addTagsToEntry(x.dataset.addtag);
+  }));
+}
 function matchesFilter(e) {
   if (activeTag && !e.tags.includes(activeTag)) return false;
   if (searchQuery) {
@@ -484,11 +504,14 @@ function taskDetailCard(e) {
     detail = `<div class="postit-bullets-wrap" data-detail-toggle="${e.id}">${bulletListHtml(e.title)}</div>`;
   }
   card.innerHTML =
-    `<div class="meta"><span>Task</span><span class="boxclose" data-del="${e.id}" title="delete">✕</span></div>` +
+    `<div class="meta"><span>Task</span><span class="tags">${e.tags.map((t) => tagSpan(t)).join(" ")}` +
+    `<span class="boxclose" data-addtag="${e.id}" title="add tag">+</span>` +
+    `<span class="boxclose" data-del="${e.id}" title="delete">✕</span></span></div>` +
     `<div class="row${e.done ? " done" : ""}" data-id="${e.id}"><div class="box"></div><span class="txt">${escapeHtml(e.body)}</span></div>` +
     detail;
   wireRows(card);
   wireTaskDetailInputs(card);
+  wireAddTag(card);
   card.querySelectorAll("[data-detail-toggle]").forEach((el) => el.addEventListener("click", () => {
     expandedTaskIds.add(e.id);
     render();
@@ -593,7 +616,8 @@ function diaryCards() {
       body = `<p>${escapeHtml(e.body)}</p>`;
     }
     card.innerHTML =
-      `<div class="meta"><span>${dateStr}</span><span class="tags">${tagSpan("diary")}` +
+      `<div class="meta"><span>${dateStr}</span><span class="tags">${e.tags.map((t) => tagSpan(t)).join(" ")}` +
+      `<span class="boxclose" data-addtag="${e.id}" title="add tag">+</span>` +
       `<span class="boxclose" data-sketch-toggle="${e.id}" title="${sketching ? "cancel drawing" : "draw"}">${sketching ? "Aa" : "✎"}</span>` +
       `<span class="boxclose" data-del="${e.id}" title="delete">✕</span></span></div>` +
       (e.title ? `<h2>${escapeHtml(e.title)}</h2>` : "") +
@@ -602,6 +626,7 @@ function diaryCards() {
       ev.stopPropagation();
       deleteEntry(x.dataset.del);
     }));
+    wireAddTag(card);
     card.querySelectorAll("[data-sketch-toggle]").forEach((x) => x.addEventListener("click", (ev) => {
       ev.stopPropagation();
       if (editingSketchIds.has(e.id)) editingSketchIds.delete(e.id);
@@ -1026,7 +1051,7 @@ function noteCards() {
       ? `<a href="${escapeHtml(e.body)}" target="_blank" rel="noopener noreferrer"><img class="note-thumb" src="${escapeHtml(e.imageUrl)}" alt="" loading="lazy" onerror="this.remove()"></a>`
       : "";
     card.innerHTML =
-      `<div class="meta"><span>${dateStr}</span><span class="tags">${tagsHtml}<span class="boxclose" data-del="${e.id}" title="delete">✕</span></span></div>` +
+      `<div class="meta"><span>${dateStr}</span><span class="tags">${tagsHtml}<span class="boxclose" data-addtag="${e.id}" title="add tag">+</span><span class="boxclose" data-del="${e.id}" title="delete">✕</span></span></div>` +
       thumbHtml +
       (e.title ? `<h2>${escapeHtml(e.title)}</h2>` : "") +
       `<p>${bodyHtml}</p>`;
@@ -1034,6 +1059,7 @@ function noteCards() {
       ev.stopPropagation();
       deleteEntry(x.dataset.del);
     }));
+    wireAddTag(card);
     return card;
   });
 }
