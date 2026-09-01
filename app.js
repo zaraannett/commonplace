@@ -795,6 +795,77 @@ function grainCanvas() {
   grainCanvasCache = n;
   return n;
 }
+
+// Real coffee rings dry unevenly — broken, wavy edges and a scatter of small satellite droplets,
+// not a clean circle. A CSS radial-gradient can only ever be a perfect circle, which is why the
+// first version of this looked more like a UI element than a stain. Drawing it on a canvas
+// instead — several overlapping jittered passes for the ring line, plus scattered droplet blobs —
+// gets close to the real texture, same procedural-canvas-as-background-image trick as grainCanvas.
+function drawJitteredRing(ctx, cx, cy, r) {
+  for (let pass = 0; pass < 5; pass++) {
+    ctx.beginPath();
+    const segments = 40;
+    for (let i = 0; i <= segments; i++) {
+      const a = (i / segments) * Math.PI * 2;
+      const rr = r + (Math.random() - 0.5) * 9;
+      const x = cx + Math.cos(a) * rr, y = cy + Math.sin(a) * rr;
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.strokeStyle = `rgba(126,84,46,${(0.07 + Math.random() * 0.13).toFixed(2)})`;
+    ctx.lineWidth = 1.2 + Math.random() * 2.4;
+    ctx.stroke();
+  }
+  ctx.beginPath();
+  ctx.arc(cx, cy, r * 0.86, 0, Math.PI * 2);
+  ctx.fillStyle = "rgba(126,84,46,.045)";
+  ctx.fill();
+  const droplets = 4 + Math.floor(Math.random() * 5);
+  for (let i = 0; i < droplets; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const d = r * (0.85 + Math.random() * 0.6);
+    const bx = cx + Math.cos(a) * d, by = cy + Math.sin(a) * d;
+    const br = 2 + Math.random() * 5;
+    ctx.beginPath();
+    for (let j = 0; j <= 10; j++) {
+      const a2 = (j / 10) * Math.PI * 2;
+      const rr = br + (Math.random() - 0.5) * 3;
+      const x = bx + Math.cos(a2) * rr, y = by + Math.sin(a2) * rr;
+      if (j === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.fillStyle = `rgba(126,84,46,${(0.12 + Math.random() * 0.16).toFixed(2)})`;
+    ctx.fill();
+  }
+}
+// Positions differ per variant so the three still read as distinct placements, matching the
+// stain-1/2/3 names already used elsewhere (paperClassOf, randomStainVariant).
+const STAIN_LAYOUTS = {
+  1: (w, h) => [[w * 0.82, h * 0.2, Math.min(w, h) * 0.16]],
+  2: (w, h) => [[w * 0.15, h * 0.82, Math.min(w, h) * 0.13], [w * 0.87, h * 0.88, Math.min(w, h) * 0.07]],
+  3: (w, h) => [[w * 0.48, h * 0.16, Math.min(w, h) * 0.11]],
+};
+let stainCanvasCache = {};
+function stainCanvas(variant) {
+  if (stainCanvasCache[variant]) return stainCanvasCache[variant];
+  const w = 380, h = 300;
+  const c = document.createElement("canvas");
+  c.width = w; c.height = h;
+  const ctx = c.getContext("2d");
+  (STAIN_LAYOUTS[variant] || STAIN_LAYOUTS[1])(w, h).forEach(([x, y, r]) => drawJitteredRing(ctx, x, y, r));
+  stainCanvasCache[variant] = c;
+  return c;
+}
+// Generated once at load and injected as real CSS (not inline per-card), so .stain-1/2/3 keep
+// working as plain classes everywhere they're already used (paperClassOf, the board's cards).
+(function injectStainStyles() {
+  const styleEl = document.createElement("style");
+  styleEl.textContent = STAIN_VARIANTS.map(
+    (v) => `.card.paper-stained.stain-${v}{background-image:url(${stainCanvas(v).toDataURL()});background-size:100% 100%;background-repeat:no-repeat;}`
+  ).join("\n");
+  document.head.appendChild(styleEl);
+})();
+
 function paintStroke(ctx, stroke) {
   const preset = PEN_PRESETS[stroke.tool] || PEN_PRESETS.sanderling;
   if (!stroke.points || stroke.points.length < 2) return;
