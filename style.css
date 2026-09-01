@@ -296,6 +296,12 @@ canvas#band{display:block;width:100%;height:32px;margin-top:16px;border-radius:2
   color:var(--soft);cursor:pointer;font-family:'Courier Prime',monospace;font-size:10.5px;letter-spacing:.02em;
 }
 .pen-btn.active{border-color:var(--ink);color:var(--ink);background:var(--paper);}
+.pen-sizes{display:inline-flex;gap:3px;margin-left:4px;}
+.pen-size-btn{
+  width:22px;height:22px;border-radius:50%;background:var(--card);border:1px solid var(--line);
+  color:var(--soft);cursor:pointer;font-family:'Courier Prime',monospace;font-size:10px;line-height:1;padding:0;
+}
+.pen-size-btn.active{border-color:var(--ink);color:var(--ink);background:var(--paper);}
 .pen-colors{display:flex;gap:6px;margin-bottom:8px;}
 .pen-color{
   width:18px;height:18px;border-radius:50%;border:1px solid rgba(40,35,28,.15);cursor:pointer;padding:0;
@@ -334,6 +340,12 @@ canvas#band{display:block;width:100%;height:32px;margin-top:16px;border-radius:2
 .card.paper-notecard{
   background:#FBF8EF;border:1px solid #E7E0CC;box-shadow:0 2px 4px rgba(40,35,28,.1);
 }
+/* Deliberately more saturated than the app's existing postit/butter/sage tints (all very pale) —
+   a notecard sketch should read as its own color, not as "another postit" or "another butter". */
+.card.paper-notecard.notecard-blue{background:#DCEBF5;border-color:#A9CCE0;}
+.card.paper-notecard.notecard-yellow{background:#FBEFB8;border-color:#E8D07E;}
+.card.paper-notecard.notecard-pink{background:#F8D6CA;border-color:#E9AF9B;}
+.card.paper-notecard.notecard-mint{background:#D2EEDE;border-color:#A2D8BC;}
 .card.paper-aged{
   /* A torn-out page, not a rectangle: an irregular clip-path for the ripped top edge, a
      punched-hole column down the left, and a warmer aged tone.

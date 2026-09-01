@@ -464,10 +464,10 @@ function taskDetailCard(e) {
   const sketching = editing && (sketchModeTaskIds.has(e.id) || (hasInk(e) && !(e.title && e.title.trim())));
   const inPaperMode = sketching || hasInk(e);
   // A sketched task's whole card is paper too — same reasoning as diary, no box-behind-paper.
-  const card = makeCard(inPaperMode ? `sketch-card paper-${paperOf(e.drawing)}` : "postit");
+  const card = makeCard(inPaperMode ? `sketch-card ${paperClassOf(e.drawing)}` : "postit");
   let detail;
   if (editing && sketching) {
-    detail = `<div class="sketchpad-wrap">${penToolbarHtml(e.id)}<canvas class="sketchpad" data-sketch="${e.id}"></canvas>
+    detail = `<div class="sketchpad-wrap">${penToolbarHtml(e.id)}<canvas class="sketchpad" style="height:${sketchCanvasHeight(e.type, e.drawing)}px" data-sketch="${e.id}"></canvas>
       <div class="sketch-toolbar">
         <button type="button" class="sketch-btn" data-sketch-undo="${e.id}">undo</button>
         <button type="button" class="sketch-btn" data-sketch-clear="${e.id}">clear</button>
@@ -495,7 +495,7 @@ function taskDetailCard(e) {
   card.querySelectorAll("[data-mode-toggle]").forEach((el) => el.addEventListener("click", (ev) => {
     ev.stopPropagation();
     if (sketchModeTaskIds.has(e.id)) sketchModeTaskIds.delete(e.id);
-    else { sketchModeTaskIds.add(e.id); if (!e.drawing) e.drawing = { w: 0, h: 0, strokes: [], paper: randomPaperStyle() }; }
+    else { sketchModeTaskIds.add(e.id); if (!e.drawing) e.drawing = { w: 0, h: 0, strokes: [], ...randomDrawingMeta() }; }
     render();
   }));
   card.querySelectorAll("[data-sketch-done]").forEach((el) => el.addEventListener("click", (ev) => {
@@ -575,11 +575,11 @@ function diaryCards() {
     const sketching = editingSketchIds.has(e.id);
     const inPaperMode = sketching || hasInk(e);
     // A sketch's whole card IS the paper — date/tags sit directly on it, no card-behind-paper box.
-    const card = makeCard("diary" + (inPaperMode ? ` sketch-card paper-${paperOf(e.drawing)}` : ""));
+    const card = makeCard("diary" + (inPaperMode ? ` sketch-card ${paperClassOf(e.drawing)}` : ""));
     card.dataset.entryId = e.id;
     let body;
     if (sketching) {
-      body = `<div class="sketchpad-wrap">${penToolbarHtml(e.id)}<canvas class="sketchpad" data-sketch="${e.id}"></canvas>
+      body = `<div class="sketchpad-wrap">${penToolbarHtml(e.id)}<canvas class="sketchpad" style="height:${sketchCanvasHeight(e.type, e.drawing)}px" data-sketch="${e.id}"></canvas>
         <div class="sketch-toolbar">
           <button type="button" class="sketch-btn" data-sketch-undo="${e.id}">undo</button>
           <button type="button" class="sketch-btn" data-sketch-clear="${e.id}">clear</button>
@@ -603,7 +603,7 @@ function diaryCards() {
     card.querySelectorAll("[data-sketch-toggle]").forEach((x) => x.addEventListener("click", (ev) => {
       ev.stopPropagation();
       if (editingSketchIds.has(e.id)) editingSketchIds.delete(e.id);
-      else { editingSketchIds.add(e.id); if (!e.drawing) e.drawing = { w: 0, h: 0, strokes: [], paper: randomPaperStyle() }; }
+      else { editingSketchIds.add(e.id); if (!e.drawing) e.drawing = { w: 0, h: 0, strokes: [], ...randomDrawingMeta() }; }
       render();
     }));
     card.querySelectorAll("[data-sketch-done]").forEach((x) => x.addEventListener("click", (ev) => {
@@ -646,8 +646,19 @@ const PEN_PRESETS = {
   bellerive: { label: "Bellerive", size: 6, thinning: 0.92, minAlpha: 0.55, maxAlpha: 1, grain: 0.4 },
   liffey: { label: "Liffey", size: 15, thinning: 0.85, minAlpha: 1, maxAlpha: 1, grain: 0.48 },
   highlighter: { label: "Highlighter", size: 26, thinning: 0.25, minAlpha: 0.5, maxAlpha: 0.5, grain: 0.2, blend: "multiply" },
+  // Graphite pencil: heavier grain than any pen (that's most of what reads as "pencil" rather
+  // than "pen"), gentler pressure-to-width response, and opacity that varies with pressure like
+  // Bellerive — light strokes look genuinely light, not just thin.
+  pencil: { label: "Pencil", size: 5, thinning: 0.5, minAlpha: 0.7, maxAlpha: 0.95, grain: 0.6 },
 };
-const PEN_ORDER = ["sanderling", "bellerive", "liffey", "highlighter"];
+const PEN_ORDER = ["sanderling", "bellerive", "liffey", "pencil", "highlighter"];
+// Size buttons multiply a pen's own base `size` rather than replacing it, so Liffey-small and
+// Sanderling-large stay relatively true to each pen's own character instead of all converging on
+// the same three widths.
+const PEN_SIZE_MULT = { sm: 0.55, md: 1, lg: 1.85 };
+const PEN_SIZE_ORDER = ["sm", "md", "lg"];
+const PEN_SIZE_LABEL = { sm: "S", md: "M", lg: "L" };
+let currentPenSize = "md";
 const INK_PALETTE = [
   { name: "ink", hex: "#28231C" }, { name: "rose", hex: "#C25E7C" }, { name: "butter", hex: "#B8862A" },
   { name: "sage", hex: "#6F8A57" }, { name: "peri", hex: "#6B77BF" }, { name: "lilac", hex: "#9A6FBF" },
@@ -677,15 +688,50 @@ function randomPaperStyle() {
 function paperOf(drawing) {
   return (drawing && drawing.paper) || "aged"; // drawings saved before this feature default to the original look
 }
+// Notecard is the one style that also varies by color — chosen well clear of colors already used
+// elsewhere on the board (postit pink, butter, sage) so a notecard sketch doesn't blend in as
+// "just another postit."
+const NOTECARD_COLORS = ["blue", "yellow", "pink", "mint"];
+function randomNotecardColor() {
+  return NOTECARD_COLORS[Math.floor(Math.random() * NOTECARD_COLORS.length)];
+}
+function notecardColorOf(drawing) {
+  return (drawing && drawing.cardColor) || "blue";
+}
+function paperClassOf(drawing) {
+  const style = paperOf(drawing);
+  return style === "notecard" ? `paper-${style} notecard-${notecardColorOf(drawing)}` : `paper-${style}`;
+}
+// Sketch cards also vary in size, independent of paper style, so a page of notes looks mixed
+// rather than uniform — picked once at creation, same as paper/color.
+const SKETCH_SIZE_KEYS = ["sm", "md", "lg"];
+const DIARY_SKETCH_HEIGHTS = { sm: 170, md: 230, lg: 300 };
+const POSTIT_SKETCH_HEIGHTS = { sm: 110, md: 150, lg: 200 };
+function randomSketchSize() {
+  return SKETCH_SIZE_KEYS[Math.floor(Math.random() * SKETCH_SIZE_KEYS.length)];
+}
+function sketchCanvasHeight(entryType, drawing) {
+  const key = (drawing && drawing.sizeKey) || "md";
+  const table = entryType === "task" ? POSTIT_SKETCH_HEIGHTS : DIARY_SKETCH_HEIGHTS;
+  return table[key] || table.md;
+}
+// The one call every "new sketch" creation point uses, so paper/color/size are always rolled
+// together and nothing forgets one of them.
+function randomDrawingMeta() {
+  return { paper: randomPaperStyle(), cardColor: randomNotecardColor(), sizeKey: randomSketchSize() };
+}
 // The pen/color picker only appears once she's actually touched the canvas with the Apple
 // Pencil this session — before that it's hidden so a sketch card is just paper, not a toolbar
 // sitting on top of paper. Once shown for a given entry it stays shown for that editing session.
 let pencilRevealedIds = new Set();
 
 // A stroke saved before pens existed is just a bare point array — treat it as a plain Sanderling
-// stroke in the app's ink color so old drawings keep rendering exactly as they did.
+// stroke in the app's ink color so old drawings keep rendering exactly as they did. A stroke
+// saved before pen sizes existed just has no `size` — treat that as "M", today's default.
 function normalizeStroke(raw) {
-  return Array.isArray(raw) ? { tool: "sanderling", color: INK_COLOR, points: raw } : raw;
+  if (Array.isArray(raw)) return { tool: "sanderling", color: INK_COLOR, points: raw, size: "md" };
+  if (raw && !raw.size) raw.size = "md";
+  return raw;
 }
 
 // Standard perfect-freehand helper (from its own docs): turns the polygon outline getStroke()
@@ -703,15 +749,16 @@ function svgPathFromOutline(points) {
   d.push("Z");
   return d.join(" ");
 }
-function strokeToPath(points, preset) {
+function strokeToPath(points, preset, sizeKey) {
   if (!points || points.length < 2) return "";
   const p = preset || PEN_PRESETS.sanderling;
+  const sizeMult = PEN_SIZE_MULT[sizeKey] || 1;
   if (getStroke) {
     // Real per-point pressure only comes from an Apple Pencil; mouse/touch points are all
     // recorded at a constant 0.5 (see localPoint below), so simulate a natural taper for those
     // instead of drawing a uniform-width line.
     const simulatePressure = !points.some((pt) => pt[2] !== 0.5);
-    return svgPathFromOutline(getStroke(points, { size: p.size, thinning: p.thinning, smoothing: 0.55, streamline: 0.55, simulatePressure }));
+    return svgPathFromOutline(getStroke(points, { size: p.size * sizeMult, thinning: p.thinning, smoothing: 0.55, streamline: 0.55, simulatePressure }));
   }
   return "M " + points.map((pt) => pt[0] + " " + pt[1]).join(" L ");
 }
@@ -739,7 +786,7 @@ function grainCanvas() {
 function paintStroke(ctx, stroke) {
   const preset = PEN_PRESETS[stroke.tool] || PEN_PRESETS.sanderling;
   if (!stroke.points || stroke.points.length < 2) return;
-  const d = strokeToPath(stroke.points, preset);
+  const d = strokeToPath(stroke.points, preset, stroke.size);
   if (!d) return;
   const path = new Path2D(d);
   const alpha = preset.minAlpha + (preset.maxAlpha - preset.minAlpha) * avgPressure(stroke.points);
@@ -768,7 +815,7 @@ function sketchSvg(drawing, cls) {
     if (!getStroke) {
       return `<path d="M ${stroke.points.map((pt) => pt[0] + " " + pt[1]).join(" L ")}" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>`;
     }
-    const d = strokeToPath(stroke.points, preset);
+    const d = strokeToPath(stroke.points, preset, stroke.size);
     if (!d) return "";
     const alpha = preset.minAlpha + (preset.maxAlpha - preset.minAlpha) * avgPressure(stroke.points);
     let grainOverlay = "";
@@ -787,11 +834,15 @@ function hasInk(e) {
 function colorSwatchesHtml(penId) {
   return paletteFor(penId).map((c) => `<button type="button" class="pen-color${c.hex === currentPenColor ? " active" : ""}" data-pen-color="${c.hex}" style="background:${c.hex}" title="${c.name}"></button>`).join("");
 }
+function penSizesHtml() {
+  return PEN_SIZE_ORDER.map((s) => `<button type="button" class="pen-size-btn${s === currentPenSize ? " active" : ""}" data-pen-size="${s}">${PEN_SIZE_LABEL[s]}</button>`).join("");
+}
 function penToolbarHtml(entryId) {
   const pens = PEN_ORDER.map((id) => `<button type="button" class="pen-btn${id === currentPen ? " active" : ""}" data-pen="${id}">${PEN_PRESETS[id].label}</button>`).join("");
   const revealed = pencilRevealedIds.has(entryId);
   return `<div class="pen-picker${revealed ? " revealed" : ""}" data-pen-picker="${entryId}">` +
-    `<div class="pen-toolbar">${pens}</div><div class="pen-colors">${colorSwatchesHtml(currentPen)}</div></div>`;
+    `<div class="pen-toolbar">${pens}<span class="pen-sizes">${penSizesHtml()}</span></div>` +
+    `<div class="pen-colors">${colorSwatchesHtml(currentPen)}</div></div>`;
 }
 function revealPenPicker(card, entryId) {
   pencilRevealedIds.add(entryId);
@@ -821,6 +872,11 @@ function wirePenToolbar(card) {
     wireColorButtons();
   }));
   wireColorButtons();
+  card.querySelectorAll("[data-pen-size]").forEach((btn) => btn.addEventListener("click", (ev) => {
+    ev.stopPropagation();
+    currentPenSize = btn.dataset.penSize;
+    card.querySelectorAll("[data-pen-size]").forEach((b) => b.classList.toggle("active", b === btn));
+  }));
 }
 
 // Wires pointer events onto a blank canvas for freehand drawing. Palm rejection is simple but
@@ -850,7 +906,7 @@ function initSketchpad(canvas, drawing, onChange, onPencilStart) {
     ctx.clearRect(0, 0, rect.width, rect.height);
     if (getStroke) {
       strokes.forEach((s) => paintStroke(ctx, s));
-      if (current && current.length > 1) paintStroke(ctx, { tool: currentPen, color: currentPenColor, points: current });
+      if (current && current.length > 1) paintStroke(ctx, { tool: currentPen, color: currentPenColor, points: current, size: currentPenSize });
     } else {
       // library still loading — plain polyline fallback, ignores pen styling until it's ready
       ctx.strokeStyle = INK_COLOR;
@@ -887,7 +943,7 @@ function initSketchpad(canvas, drawing, onChange, onPencilStart) {
   function up(e) {
     if (e.pointerId !== activePointerId) return;
     if (e.pointerType === "pen") lastPenUpAt = Date.now();
-    if (current && current.length > 1) strokes.push({ tool: currentPen, color: currentPenColor, points: current });
+    if (current && current.length > 1) strokes.push({ tool: currentPen, color: currentPenColor, points: current, size: currentPenSize });
     current = null;
     activePointerId = null;
     redraw();
@@ -1091,7 +1147,7 @@ function buildBoardCards() {
     const addSketchTile = makeCard("mini addbox");
     addSketchTile.innerHTML = `<div class="meta"><span>+ new sketch</span></div>`;
     addSketchTile.addEventListener("click", () => {
-      const e = addEntry({ type: "diary", drawing: { w: 0, h: 0, strokes: [], paper: randomPaperStyle() } });
+      const e = addEntry({ type: "diary", drawing: { w: 0, h: 0, strokes: [], ...randomDrawingMeta() } });
       editingSketchIds.add(e.id);
       render();
     });
