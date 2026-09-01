@@ -322,13 +322,13 @@ canvas#band{display:block;width:100%;height:32px;margin-top:16px;border-radius:2
 /* ── paper styles — a sketch's whole card IS the paper (date/tags sit right on it), picked
    randomly per drawing so a page of notes doesn't all look the same. Placed after .postit/.butter/
    etc. so equal-specificity `.card.paper-X` wins the cascade over those base card looks. ── */
-.card.sketch-card{transform:none !important;} /* paper cards sit flat — the tilt/fold reads oddly on a "real" torn page */
+.card.sketch-card{transform:none !important;} /* paper cards sit flat, not tilted like the mockup's other cards */
 .card.postit.sketch-card::after{display:none;} /* postit's folded-corner triangle */
 .card.paper-classic{
   background:#FEFDF9;border:1px solid #E4E0D4;box-shadow:0 1px 0 rgba(40,35,28,.06);
   background-image:
     linear-gradient(to right, transparent 39px, rgba(190,60,60,.5) 39px, rgba(190,60,60,.5) 40px, transparent 40px),
-    repeating-linear-gradient(to bottom, transparent, transparent 25px, rgba(60,100,180,.4) 25px, rgba(60,100,180,.4) 26px);
+    repeating-linear-gradient(to bottom, transparent, transparent 17px, rgba(60,100,180,.4) 17px, rgba(60,100,180,.4) 18px);
   background-position:0 30px;
 }
 .card.paper-graph{
@@ -346,36 +346,24 @@ canvas#band{display:block;width:100%;height:32px;margin-top:16px;border-radius:2
 .card.paper-notecard.notecard-yellow{background:#FBEFB8;border-color:#E8D07E;}
 .card.paper-notecard.notecard-pink{background:#F8D6CA;border-color:#E9AF9B;}
 .card.paper-notecard.notecard-mint{background:#D2EEDE;border-color:#A2D8BC;}
-.card.paper-aged{
-  /* A torn-out page, not a rectangle: an irregular clip-path for the ripped top edge, a
-     punched-hole column down the left, and a warmer aged tone.
-     The holes are ONE hole+ring tile, repeated down the height via background-size+repeat-y —
-     not several hardcoded Y positions — so they're always evenly spaced and never get cut off
-     partway, whatever height a given card actually ends up. mask-image uses the exact same
-     tile/size/repeat so the true see-through cutout lines up perfectly with the drawn rim.
-     filter:drop-shadow (not box-shadow) so the lift follows the torn silhouette, not a rectangle
-     behind it. Extra top padding clears the ragged band so the meta row never sits in it. */
-  background-color:#EFE3C6;border:none;box-shadow:none;padding-top:28px;padding-left:38px;
-  /* The hole/ring tile is sized 100% WIDE (not just as wide as the hole column) so tiling it
-     vertically doesn't mask away everything to the right of the holes — a mask/background tile
-     narrower than the element leaves the uncovered area transparent, which was cutting the whole
-     card down to a sliver. The circle sits at a fixed 18px from the left within that full-width
-     tile; everything past its ring is solid, so the "page" stays intact across the rest of the
-     width. */
+.card.paper-stained{
+  /* Plain paper with a coffee-ring stain — replaced an earlier torn-edge/punched-hole treatment
+     that looked too mechanical. A stain is just a few concentric radial-gradients (translucent
+     wash in the middle, a darker ring at the rim where the liquid actually dried, fading out
+     past that) — three position/size variants picked randomly per sketch, same as notecard's
+     color set, rather than fully random coordinates. */
+  background-color:#FBF7ED;border:1px solid #E9E2CE;box-shadow:0 1px 0 rgba(40,35,28,.06);
+}
+.card.paper-stained.stain-1{
+  background-image:radial-gradient(circle at 82% 16%, transparent 28px, rgba(120,78,40,.10) 30px, rgba(120,78,40,.22) 35px, rgba(120,78,40,.1) 39px, transparent 42px);
+}
+.card.paper-stained.stain-2{
   background-image:
-    radial-gradient(circle at 18px 29px, transparent 4px, rgba(70,58,38,.6) 4px, rgba(70,58,38,.6) 7px, transparent 7px),
-    linear-gradient(to right, transparent 40px, rgba(194,94,124,.3) 40px, rgba(194,94,124,.3) 41px, transparent 41px),
-    repeating-linear-gradient(to bottom, transparent, transparent 25px, rgba(120,108,80,.28) 25px, rgba(120,108,80,.28) 26px);
-  background-size:100% 58px, auto, auto;
-  background-repeat:repeat-y, repeat, repeat;
-  background-position:0 0, 0 28px, 0 28px;
-  clip-path:polygon(0% 2%,2% 5%,5% 1%,7% 6%,10% 3%,12% 7%,16% 2%,19% 8%,21% 4%,25% 6%,28% 1%,31% 5%,35% 2%,38% 7%,42% 3%,45% 5%,49% 1%,52% 6%,56% 3%,59% 8%,63% 2%,66% 5%,70% 1%,73% 7%,77% 3%,80% 6%,84% 2%,87% 5%,91% 1%,94% 7%,97% 3%,100% 5%,100% 100%,0% 100%);
-  mask-image:radial-gradient(circle at 18px 29px, transparent 4px, black 4px);
-  -webkit-mask-image:radial-gradient(circle at 18px 29px, transparent 4px, black 4px);
-  mask-size:100% 58px; -webkit-mask-size:100% 58px;
-  mask-repeat:repeat-y; -webkit-mask-repeat:repeat-y;
-  mask-position:0 0; -webkit-mask-position:0 0;
-  filter:drop-shadow(0 3px 4px rgba(40,35,28,.16));
+    radial-gradient(circle at 14% 78%, transparent 22px, rgba(120,78,40,.09) 24px, rgba(120,78,40,.2) 28px, rgba(120,78,40,.09) 31px, transparent 34px),
+    radial-gradient(circle at 88% 88%, transparent 12px, rgba(120,78,40,.12) 14px, rgba(120,78,40,.05) 17px, transparent 19px);
+}
+.card.paper-stained.stain-3{
+  background-image:radial-gradient(circle at 46% 14%, transparent 19px, rgba(120,78,40,.1) 21px, rgba(120,78,40,.22) 25px, rgba(120,78,40,.08) 28px, transparent 31px);
 }
 .scribble{font-family:'Caveat',cursive;font-size:20px;line-height:1.45;}
 

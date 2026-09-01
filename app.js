@@ -678,15 +678,16 @@ let currentPen = "sanderling";
 let currentPenColor = INK_COLOR;
 
 // Each sketch gets a random paper style at creation, so a page of notes doesn't look uniform —
-// "aged" is the only one with the torn-edge/punched-hole treatment; the other three are plain
-// rectangles with just a different background. Picked once and stored on the drawing itself
-// (not re-rolled on every render) so a note doesn't change paper every time it redraws.
-const PAPER_STYLES = ["aged", "classic", "graph", "notecard"];
+// "stained" is plain paper with a coffee-ring stain (a couple of position/size variants); the
+// other three are plain rectangles with just a different background. Picked once and stored on
+// the drawing itself (not re-rolled on every render) so a note doesn't change paper every time
+// it redraws.
+const PAPER_STYLES = ["stained", "classic", "graph", "notecard"];
 function randomPaperStyle() {
   return PAPER_STYLES[Math.floor(Math.random() * PAPER_STYLES.length)];
 }
 function paperOf(drawing) {
-  return (drawing && drawing.paper) || "aged"; // drawings saved before this feature default to the original look
+  return (drawing && drawing.paper) || "stained"; // drawings saved before this feature default to the original look
 }
 // Notecard is the one style that also varies by color — chosen well clear of colors already used
 // elsewhere on the board (postit pink, butter, sage) so a notecard sketch doesn't blend in as
@@ -698,9 +699,20 @@ function randomNotecardColor() {
 function notecardColorOf(drawing) {
   return (drawing && drawing.cardColor) || "blue";
 }
+// Stained is the one style that varies by stain placement/size — three hand-picked variants
+// rather than fully random coordinates, same reasoning as notecard's color set.
+const STAIN_VARIANTS = ["1", "2", "3"];
+function randomStainVariant() {
+  return STAIN_VARIANTS[Math.floor(Math.random() * STAIN_VARIANTS.length)];
+}
+function stainVariantOf(drawing) {
+  return (drawing && drawing.stainVariant) || "1";
+}
 function paperClassOf(drawing) {
   const style = paperOf(drawing);
-  return style === "notecard" ? `paper-${style} notecard-${notecardColorOf(drawing)}` : `paper-${style}`;
+  if (style === "notecard") return `paper-${style} notecard-${notecardColorOf(drawing)}`;
+  if (style === "stained") return `paper-${style} stain-${stainVariantOf(drawing)}`;
+  return `paper-${style}`;
 }
 // Sketch cards also vary in size, independent of paper style, so a page of notes looks mixed
 // rather than uniform — picked once at creation, same as paper/color.
@@ -718,7 +730,7 @@ function sketchCanvasHeight(entryType, drawing) {
 // The one call every "new sketch" creation point uses, so paper/color/size are always rolled
 // together and nothing forgets one of them.
 function randomDrawingMeta() {
-  return { paper: randomPaperStyle(), cardColor: randomNotecardColor(), sizeKey: randomSketchSize() };
+  return { paper: randomPaperStyle(), cardColor: randomNotecardColor(), stainVariant: randomStainVariant(), sizeKey: randomSketchSize() };
 }
 // The pen/color picker only appears once she's actually touched the canvas with the Apple
 // Pencil this session — before that it's hidden so a sketch card is just paper, not a toolbar
