@@ -221,6 +221,38 @@ canvas#band{display:block;width:100%;height:32px;margin-top:16px;border-radius:2
 .mood-freq-count{font-size:10.5px;color:var(--soft);flex:0 0 16px;text-align:right;}
 .mood-freq-empty{font-size:11.5px;color:var(--soft);margin-top:8px;}
 
+/* ── star chart — a nostalgic chore-chart-style alternative view of habits, its own tab. ── */
+.card.star-chart{
+  background:#FFFDF6;border:3px dashed var(--rust);border-radius:6px;
+  padding:18px 20px 20px;transform:none !important;
+}
+.star-chart-banner{
+  text-align:center;font-family:'Newsreader',serif;font-style:italic;font-size:19px;
+  color:var(--ink);padding-bottom:12px;margin-bottom:12px;border-bottom:2px dashed var(--line);
+}
+.star-chart-title{text-transform:uppercase;letter-spacing:.04em;font-style:normal;font-weight:600;}
+.star-table{width:100%;border-collapse:collapse;table-layout:fixed;}
+.star-table th{font-size:10px;color:var(--soft);font-weight:400;text-transform:uppercase;letter-spacing:.06em;padding-bottom:8px;}
+.star-row-label{
+  text-align:left;font-size:11.5px;padding:8px 8px 8px 0;width:30%;
+  display:table-cell;position:relative;
+}
+.star-row-label span:first-child{padding-right:16px;}
+.star-del{position:absolute;right:0;top:8px;font-size:10px;color:var(--soft);cursor:pointer;opacity:.6;}
+.star-del:hover{opacity:1;}
+.star-cell{
+  border:1px solid var(--line);text-align:center;vertical-align:middle;
+  height:44px;width:44px;cursor:pointer;position:relative;
+}
+.star-table tr:nth-child(even) td.star-cell:nth-child(odd),
+.star-table tr:nth-child(odd) td.star-cell:nth-child(even){background:rgba(63,151,163,.14);}
+.star-cell.today{box-shadow:inset 0 0 0 2px var(--rust);}
+.star-sticker{width:32px;height:32px;filter:drop-shadow(0 1px 1px rgba(40,35,28,.2));}
+.star-sticker.gold path{fill:#D9A441;}
+.star-sticker.rust path{fill:#B5502F;}
+.star-sticker.olive path{fill:#9C8A2E;}
+.star-empty{padding:20px 8px;text-align:center;color:var(--soft);font-size:11.5px;}
+
 /* ── BOARD ── */
 .board{
   margin-top:18px;display:grid;gap:18px;align-items:start;

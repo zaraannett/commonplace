@@ -187,13 +187,17 @@ function cycleTaskStatus(id) {
   db.from("entries").update({ in_progress: e.inProgress, done: e.done, done_at: e.doneAt }).eq("id", id).then(({ error }) => { if (error) console.error("update failed", error); });
 }
 function toggleHabitCheckin(id) {
+  toggleHabitCheckinDate(id, todayIso());
+}
+// Same as toggleHabitCheckin but for an arbitrary day — the star chart lets you tap any cell in
+// the week, not just today (catching up a missed day, or undoing one).
+function toggleHabitCheckinDate(id, iso) {
   const e = entries.find((x) => x.id === id);
   if (!e) return;
   e.checkins = e.checkins || [];
-  const t = todayIso();
-  const i = e.checkins.indexOf(t);
+  const i = e.checkins.indexOf(iso);
   if (i >= 0) e.checkins.splice(i, 1);
-  else e.checkins.push(t);
+  else e.checkins.push(iso);
   render();
   db.from("entries").update({ checkins: e.checkins }).eq("id", id).then(({ error }) => { if (error) console.error("update failed", error); });
 }
@@ -1397,6 +1401,52 @@ function habitsCard() {
   return card;
 }
 
+// ── star chart — a nostalgic, hand-drawn alternative view of the same habit entries/checkins
+// used by habitsCard() above (its own tab, per the ask; the plain weekly-count card on the
+// Everything board is untouched). A cell is a day × habit square; tapping one places or removes
+// a star sticker for that exact date, not just today.
+const STAR_COLORS = ["gold", "rust", "olive"];
+function starStickerSvg(seed) {
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
+  const angle = (h % 17) - 8; // small per-cell tilt, stable across re-renders — looks hand-stuck-on
+  const color = STAR_COLORS[h % STAR_COLORS.length];
+  return `<svg class="star-sticker ${color}" viewBox="0 0 40 40" style="transform:rotate(${angle}deg)">` +
+    `<path d="M20 3 L24 15 L37 15 L26 23 L30 36 L20 28 L10 36 L14 23 L3 15 L16 15 Z" /></svg>`;
+}
+function starChartCard() {
+  const items = entries.filter((e) => e.type === "habit" && matchesFilter(e));
+  const week = weekIsoDates();
+  const dayLetters = ["M", "T", "W", "T", "F", "S", "S"];
+  const today = todayIso();
+  const rows = items.map((e) => {
+    const checkins = e.checkins || [];
+    const cells = week.map((iso) =>
+      `<td class="star-cell${iso === today ? " today" : ""}" data-star-cell="${e.id}" data-star-date="${iso}">` +
+      (checkins.includes(iso) ? starStickerSvg(e.id + iso) : "") +
+      `</td>`
+    ).join("");
+    return `<tr><th class="star-row-label"><span>${escapeHtml(e.title || e.body)}</span><span class="star-del" data-del="${e.id}" title="delete">✕</span></th>${cells}</tr>`;
+  }).join("");
+  const card = makeCard("wide star-chart");
+  card.innerHTML =
+    `<div class="star-chart-banner">☆ <span class="star-chart-title">weekly star chart</span> ☆</div>` +
+    `<table class="star-table"><colgroup><col style="width:28%">${dayLetters.map(() => "<col>").join("")}</colgroup>` +
+    `<tr><th></th>${dayLetters.map((d) => `<th>${d}</th>`).join("")}</tr>` +
+    (rows || `<tr><td colspan="8" class="star-empty">No habits yet — add one below to start earning stars.</td></tr>`) +
+    `</table>` +
+    addRowHtml("add a habit…");
+  wireCardInteractions(card, { type: "habit", tags: ["habit"], weeklyTarget: 3, checkins: [] });
+  card.querySelectorAll("[data-star-cell]").forEach((td) => td.addEventListener("click", () => {
+    toggleHabitCheckinDate(td.dataset.starCell, td.dataset.starDate);
+  }));
+  card.querySelectorAll(".star-del").forEach((x) => x.addEventListener("click", (ev) => {
+    ev.stopPropagation();
+    deleteEntry(x.dataset.del);
+  }));
+  return card;
+}
+
 // ── interactions ─────────────────────────────────────────────────────
 function wireRows(container) {
   container.querySelectorAll(".row").forEach((row) => {
@@ -1497,6 +1547,8 @@ function buildBoardCards() {
     list.push({ id: "add-task-box", el: addBoxTile });
   } else if (activeNavId === "month") {
     list.push({ id: "calendar", el: calendarCard(true) });
+  } else if (activeNavId === "starchart") {
+    list.push({ id: "star-chart", el: starChartCard() });
   } else {
     list.push({ id: "mood", el: moodCard() });
     list.push({ id: "coming-up", el: comingUpCard() });
@@ -1689,6 +1741,7 @@ const FIXED_TABS = [
   { id: "day", label: "Day", view: "day", tag: null, dotColor: "cyan" },
   { id: "week", label: "Week", view: "week", tag: null, dotColor: "peri" },
   { id: "month", label: "Month", view: "board", tag: null, dotColor: "peri" },
+  { id: "starchart", label: "Star Chart", view: "board", tag: null, dotColor: "butter" },
 ];
 let activeNavId = "everything";
 
