@@ -150,6 +150,55 @@ canvas#band{display:block;width:100%;height:32px;margin-top:16px;border-radius:2
 .cu-then{font-size:11px;color:var(--soft);margin-top:9px;padding-top:8px;border-top:1px dashed var(--line);}
 .cu-empty{font-size:12px;color:var(--soft);margin-top:6px;}
 
+/* ── mood check-in ("today's vibe") — .card.widget above gives it the flat, no-tilt,
+   rounded-corner "hero" treatment; these rules are just the picker/history inside it. ── */
+:root{--rust:#A54B36;}
+.mood-date{font-size:10.5px;color:var(--soft);text-transform:uppercase;letter-spacing:.08em;}
+.mood-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:8px;margin-top:8px;}
+.mood-btn{
+  display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 4px 8px;
+  border:1px solid transparent;border-radius:10px;cursor:pointer;font-family:'Courier Prime',monospace;
+  background:none;
+}
+.mood-btn svg{width:30px;height:30px;stroke:var(--ink);stroke-width:3;fill:none;stroke-linecap:round;stroke-linejoin:round;}
+.mood-btn-label{font-size:10px;color:var(--soft);letter-spacing:.02em;}
+.mood-btn.active{border-color:var(--ink);}
+.mood-btn.butter{background:rgba(184,134,42,.14);} .mood-btn.butter.active{background:rgba(184,134,42,.32);}
+.mood-btn.sage{background:rgba(111,138,87,.14);} .mood-btn.sage.active{background:rgba(111,138,87,.32);}
+.mood-btn.cyan{background:rgba(63,151,163,.14);} .mood-btn.cyan.active{background:rgba(63,151,163,.32);}
+.mood-btn.lilac{background:rgba(154,111,191,.14);} .mood-btn.lilac.active{background:rgba(154,111,191,.32);}
+.mood-btn.grey{background:rgba(139,131,117,.14);} .mood-btn.grey.active{background:rgba(139,131,117,.32);}
+.mood-btn.peri{background:rgba(107,119,191,.14);} .mood-btn.peri.active{background:rgba(107,119,191,.32);}
+.mood-btn.rust{background:rgba(165,75,54,.14);} .mood-btn.rust.active{background:rgba(165,75,54,.32);}
+.mood-btn.rose{background:rgba(194,94,124,.14);} .mood-btn.rose.active{background:rgba(194,94,124,.32);}
+
+.mood-today{display:flex;align-items:center;gap:14px;margin-top:8px;cursor:pointer;}
+.mood-today-icon{width:64px;height:64px;flex:0 0 64px;border-radius:14px;display:flex;align-items:center;justify-content:center;}
+.mood-today-icon svg{width:38px;height:38px;stroke:var(--ink);stroke-width:3;fill:none;stroke-linecap:round;stroke-linejoin:round;}
+.mood-today-icon.butter{background:rgba(184,134,42,.22);}
+.mood-today-icon.sage{background:rgba(111,138,87,.22);}
+.mood-today-icon.cyan{background:rgba(63,151,163,.22);}
+.mood-today-icon.lilac{background:rgba(154,111,191,.22);}
+.mood-today-icon.grey{background:rgba(139,131,117,.22);}
+.mood-today-icon.peri{background:rgba(107,119,191,.22);}
+.mood-today-icon.rust{background:rgba(165,75,54,.22);}
+.mood-today-icon.rose{background:rgba(194,94,124,.22);}
+.mood-today-label{font-family:'Newsreader',serif;font-style:italic;font-size:21px;}
+.mood-change-btn{margin-top:10px;}
+
+.mood-history{display:flex;gap:9px;margin-top:14px;padding-top:10px;border-top:1px dashed var(--line);}
+.mood-hist-day{display:flex;flex-direction:column;align-items:center;gap:4px;}
+.mood-dot{width:11px;height:11px;border-radius:50%;border:1px dashed var(--line);display:block;}
+.mood-dot.butter{background:var(--butter);border-style:solid;border-color:transparent;}
+.mood-dot.sage{background:var(--sage);border-style:solid;border-color:transparent;}
+.mood-dot.cyan{background:var(--cyan);border-style:solid;border-color:transparent;}
+.mood-dot.lilac{background:var(--lilac);border-style:solid;border-color:transparent;}
+.mood-dot.grey{background:var(--grey);border-style:solid;border-color:transparent;}
+.mood-dot.peri{background:var(--peri);border-style:solid;border-color:transparent;}
+.mood-dot.rust{background:var(--rust);border-style:solid;border-color:transparent;}
+.mood-dot.rose{background:var(--rose);border-style:solid;border-color:transparent;}
+.mood-hist-letter{font-size:8.5px;color:var(--soft);text-transform:uppercase;}
+
 /* ── BOARD ── */
 .board{
   margin-top:18px;display:grid;gap:18px;align-items:start;

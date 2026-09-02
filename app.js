@@ -447,6 +447,107 @@ function renderWeekStrip() {
   }
 }
 
+// ── mood check-in ("today's vibe") ──────────────────────────────────
+// A dedicated entry type, one per calendar day, keyed off createdAt (not dueAt — a mood didn't
+// come "due", it just happened that day, same reasoning as diary entries). Keeping it off dueAt
+// also matters mechanically: renderWeekView() and calendarCard() both key off e.dueAt for any
+// entry type, so a mood row with a dueAt would show up there as a stray due-date block.
+const MOODS = [
+  { id: "glowing", label: "Glowing", color: "butter" },
+  { id: "steady", label: "Steady", color: "sage" },
+  { id: "soft", label: "Soft", color: "cyan" },
+  { id: "cozy", label: "Cozy", color: "lilac" },
+  { id: "foggy", label: "Foggy", color: "grey" },
+  { id: "flat", label: "Flat", color: "peri" },
+  { id: "heavy", label: "Heavy", color: "grey" },
+  { id: "wired", label: "Wired", color: "rust" },
+  { id: "spiraling", label: "Spiraling", color: "rose" },
+  { id: "simmering", label: "Simmering", color: "rust" },
+  { id: "overflowing", label: "Overflowing", color: "peri" },
+];
+// Small hand-drawn glyphs (viewBox 0 0 64 64) — inner markup only, wrapped by moodIconSvg().
+const MOOD_ICON_PATHS = {
+  glowing: `<circle cx="32" cy="33" r="8" /><path d="M32 16 L33 6"/><path d="M32 50 L31 59"/><path d="M16 33 L6 32"/><path d="M50 32 L60 33"/><path d="M21 22 L13 14"/><path d="M44 44 L52 51"/><path d="M44 22 L51 14"/><path d="M21 44 L13 52"/>`,
+  steady: `<path d="M10 46 L26 18 L34 32 L42 14 L56 46 Z" />`,
+  soft: `<path d="M14 38 C10 28 20 20 28 24 C32 14 46 16 48 26 C58 26 58 40 48 40 C46 46 34 48 30 42 C22 46 12 44 14 38 Z" />`,
+  cozy: `<path d="M16 28 L16 46 C16 52 40 52 40 46 L40 28 Z" /><path d="M40 32 C48 32 48 42 40 42" /><path d="M22 22 C20 16 26 16 24 10" />`,
+  foggy: `<path d="M8 22 Q16 16 24 22 T40 22 T56 22" /><path d="M12 34 Q20 28 28 34 T44 34 T58 34" /><path d="M8 46 Q16 40 24 46 T40 46 T56 46" />`,
+  flat: `<path d="M12 32 Q22 30 32 32 T52 33" />`,
+  heavy: `<path d="M10 20 Q32 26 54 20" /><path d="M32 26 L32 40" /><circle cx="32" cy="46" r="6" />`,
+  wired: `<path d="M6 32 L16 32 L20 18 L26 46 L32 24 L36 32 L58 32" />`,
+  spiraling: `<path d="M34,30 L34.6,32.6 L32,35.4 L27,35 L23.2,30 L24.6,22.6 L32,17.8 L41.8,20.2 L47.6,30 L44.2,42.2 L32,49 L17.4,44.6 L9.6,30 L15,13" />`,
+  simmering: `<path d="M14 36 L50 36 L46 48 L18 48 Z" /><path d="M22 30 Q19 24 23 20 Q26 16 22 10" /><path d="M32 30 Q35 22 31 18 Q28 14 33 8" /><path d="M42 30 Q39 24 43 20 Q46 16 42 10" />`,
+  overflowing: `<path d="M20 22 L23 50 L41 50 L44 22" /><path d="M20 22 Q26 18 32 22 T44 22" /><path d="M13 30 L11 37" /><path d="M51 28 L53 35" />`,
+};
+function moodIconSvg(id, cls) {
+  return `<svg class="${cls || ""}" viewBox="0 0 64 64">${MOOD_ICON_PATHS[id] || ""}</svg>`;
+}
+function todayMoodEntry() {
+  const today = todayIso();
+  return entries.find((e) => e.type === "mood" && (e.createdAt || "").slice(0, 10) === today);
+}
+let moodPickerOpen = false;
+function setTodayMood(id) {
+  const existing = todayMoodEntry();
+  if (existing) {
+    existing.title = id;
+    db.from("entries").update({ title: id }).eq("id", existing.id).then(({ error }) => { if (error) console.error("update failed", error); });
+  } else {
+    addEntry({ type: "mood", title: id });
+  }
+  moodPickerOpen = false;
+  render();
+}
+function moodHistoryStrip() {
+  const dayLetters = ["S", "M", "T", "W", "T", "F", "S"];
+  const today = todayStart();
+  const cells = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const iso = d.toISOString().slice(0, 10);
+    const found = entries.find((e) => e.type === "mood" && (e.createdAt || "").slice(0, 10) === iso);
+    const mood = found && MOODS.find((m) => m.id === found.title);
+    cells.push(`<div class="mood-hist-day"><span class="mood-dot${mood ? " " + mood.color : ""}" title="${mood ? mood.label : "no check-in"}"></span><span class="mood-hist-letter">${dayLetters[d.getDay()]}</span></div>`);
+  }
+  return `<div class="mood-history">${cells.join("")}</div>`;
+}
+function moodCard() {
+  const card = makeCard("mood-card widget wide");
+  const todayEntry = todayMoodEntry();
+  const todayMood = todayEntry && MOODS.find((m) => m.id === todayEntry.title);
+  const dateStr = new Date().toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" });
+  let body;
+  if (todayMood && !moodPickerOpen) {
+    body =
+      `<div class="mood-today" data-mood-change>` +
+      `<div class="mood-today-icon ${todayMood.color}">${moodIconSvg(todayMood.id)}</div>` +
+      `<div class="mood-today-label">${todayMood.label}</div>` +
+      `</div>` +
+      `<button type="button" class="sketch-btn mood-change-btn" data-mood-change>change</button>`;
+  } else {
+    body = `<div class="mood-grid">` + MOODS.map((m) =>
+      `<button type="button" class="mood-btn ${m.color}${todayMood && todayMood.id === m.id ? " active" : ""}" data-mood-pick="${m.id}">` +
+      moodIconSvg(m.id) +
+      `<span class="mood-btn-label">${m.label}</span></button>`
+    ).join("") + `</div>`;
+  }
+  card.innerHTML =
+    `<div class="meta"><span>Today's vibe</span><span class="tags"><span class="mood-date">${dateStr}</span></span></div>` +
+    body +
+    moodHistoryStrip();
+  card.querySelectorAll("[data-mood-pick]").forEach((btn) => btn.addEventListener("click", (ev) => {
+    ev.stopPropagation();
+    setTodayMood(btn.dataset.moodPick);
+  }));
+  card.querySelectorAll("[data-mood-change]").forEach((el) => el.addEventListener("click", (ev) => {
+    ev.stopPropagation();
+    moodPickerOpen = true;
+    render();
+  }));
+  return card;
+}
+
 // ── rendering: coming up widget ─────────────────────────────────────
 function comingUpCard() {
   const now = new Date();
@@ -1324,6 +1425,7 @@ function buildBoardCards() {
   } else if (activeNavId === "month") {
     list.push({ id: "calendar", el: calendarCard(true) });
   } else {
+    list.push({ id: "mood", el: moodCard() });
     list.push({ id: "coming-up", el: comingUpCard() });
     const bl = bigListCard();
     if (bl) list.push({ id: "big-list", el: bl });
