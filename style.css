@@ -498,7 +498,7 @@ footer .fmark{font-family:'Newsreader',serif;font-style:italic;font-size:15px;co
      Tapping it expands #nav upward as a tappable list, using the exact same tab elements/click
      handlers renderNav() already builds for desktop — nothing about the tab data or switching
      logic is duplicated, only how the list is shown. */
-  --navbar-h:50px;
+  :root{--navbar-h:50px;}
   .tabrow{
     position:fixed;left:0;right:0;z-index:96;
     bottom:calc(var(--navbar-h) + env(safe-area-inset-bottom,0px));
