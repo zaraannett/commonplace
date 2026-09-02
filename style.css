@@ -511,13 +511,53 @@ canvas#band{display:block;width:100%;height:32px;margin-top:16px;border-radius:2
 .dot.rose{background:var(--rose);} .dot.peri{background:var(--peri);} .dot.sage{background:var(--sage);} .dot.butter{background:var(--butter);}
 .dot.lilac{background:var(--lilac);} .dot.cyan{background:var(--cyan);} .dot.grey{background:var(--grey);} .dot.rust{background:var(--rust);}
 
-.card.big-cal{grid-column:1 / -1;padding:26px 30px 22px;}
-.card.big-cal .meta{font-size:13px;margin-bottom:16px;}
-.card.big-cal h2,.card.big-cal .meta span:first-child{font-size:24px;font-family:'Newsreader',serif;}
-.card.big-cal .cal{margin-top:10px;}
-.card.big-cal .cal th{font-size:12px;padding-bottom:12px;}
-.card.big-cal .cal td{font-size:18px;padding:14px 0;}
-.card.big-cal .cal td .dot{width:6px;height:6px;}
+/* ── calendar day stickers (Month tab's bulletin board only — the small calendar on the
+   Everything board keeps the plain .dot above, untouched). Shape follows entry type (a flag
+   for events, a heart for replies, a star for everything else); color follows the entry's own
+   tag, same colorFor() every tag chip already uses — so "certain things get certain colors"
+   happens automatically, no extra setup. ── */
+.cal-sticker{position:absolute;left:50%;bottom:1px;transform:translateX(-50%);width:16px;height:16px;filter:drop-shadow(0 1px 1px rgba(40,35,28,.2));}
+.cal-sticker.rose path{fill:var(--rose);} .cal-sticker.butter path{fill:var(--butter);}
+.cal-sticker.sage path{fill:var(--sage);} .cal-sticker.peri path{fill:var(--peri);}
+.cal-sticker.lilac path{fill:var(--lilac);} .cal-sticker.cyan path{fill:var(--cyan);}
+
+/* ── the Month tab's big calendar — a corkboard "bulletin board" with the month pinned to it
+   like a sheet of paper, handwritten day numbers, and a row of placeholder slots reserved for
+   the Pinterest photos/quotes coming later. ── */
+.card.bulletin-board{
+  grid-column:1 / -1;background-color:#C8A876;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='c'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='linear' slope='0.15'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23c)'/%3E%3C/svg%3E");
+  border:10px solid #8B6A46;border-radius:4px;padding:34px;transform:none !important;
+}
+.pushpin{
+  position:absolute;top:-9px;left:50%;transform:translateX(-50%);
+  width:15px;height:15px;border-radius:50%;z-index:3;box-shadow:0 2px 4px rgba(40,35,28,.35);
+}
+.pushpin.rose{background:radial-gradient(circle at 35% 32%, #E29AAB, var(--rose) 62%);}
+.pushpin.butter{background:radial-gradient(circle at 35% 32%, #E8C97A, var(--butter) 62%);}
+.pushpin.sage{background:radial-gradient(circle at 35% 32%, #A9C393, var(--sage) 62%);}
+.bulletin-sheet{
+  position:relative;background:#FFFDF6;border:1px solid #E4E0D4;border-radius:2px;
+  padding:22px 26px 26px;box-shadow:0 5px 14px rgba(40,35,28,.28);transform:rotate(-.6deg);
+}
+.bulletin-sheet .meta{margin-bottom:10px;}
+.bulletin-sheet .meta span:first-child{font-family:'Newsreader',serif;font-style:italic;font-size:26px;}
+.bulletin-sheet .cal{margin-top:8px;}
+.bulletin-sheet .cal th{font-size:12px;padding-bottom:12px;}
+.bulletin-sheet .cal td{font-family:'Klee One',cursive;font-size:18px;padding:15px 0;}
+.bulletin-sheet .cal-sticker{width:20px;height:20px;bottom:3px;}
+
+.bulletin-photos{display:flex;gap:22px;margin-top:30px;flex-wrap:wrap;justify-content:center;}
+.bulletin-photo{
+  position:relative;width:128px;height:150px;background:#FFFDF6;
+  border:1px solid #E4E0D4;box-shadow:0 4px 10px rgba(40,35,28,.22);
+  display:flex;align-items:center;justify-content:center;padding:10px;
+}
+.bulletin-photo:nth-child(1){transform:rotate(-3deg);}
+.bulletin-photo:nth-child(2){transform:rotate(2deg);}
+.bulletin-photo:nth-child(3){transform:rotate(-1.5deg);}
+.bulletin-photo.placeholder{border:2px dashed #C9BFA8;background:rgba(255,253,246,.5);box-shadow:none;}
+.bulletin-photo.placeholder span{font-size:10.5px;color:#8B6A46;text-align:center;font-family:'Courier Prime',monospace;letter-spacing:.02em;}
 
 /* ── DAY / WEEK stub views ── */
 .day{max-width:600px;margin:30px auto 0;}

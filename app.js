@@ -1339,6 +1339,21 @@ function pinnedCards() {
   });
 }
 
+// The plain flat dot the small Everything-board calendar has always used — untouched.
+function calendarDotHtml(color) {
+  return `<div class="dot ${color}"></div>`;
+}
+// Hand-drawn sticker for the big bulletin-board calendar — shape by entry type, color by tag
+// (colorFor(), same source every tag chip in the app already uses).
+function calendarStickerSvg(type, color) {
+  const shape = type === "event" ? "flag" : type === "reply" ? "heart" : "star";
+  const paths = {
+    star: `<path d="M20 3 L24 15 L37 15 L26 23 L30 36 L20 28 L10 36 L14 23 L3 15 L16 15 Z" />`,
+    heart: `<path d="M20 33 C10 25 4 17 8 10 C11 5 17 6 20 12 C23 6 29 5 32 10 C36 17 30 25 20 33 Z" />`,
+    flag: `<path d="M10 3 L13 3 L13 37 L10 37 Z M13 6 L30 11 L13 17 Z" />`,
+  };
+  return `<svg class="cal-sticker ${color}" viewBox="0 0 40 40">${paths[shape]}</svg>`;
+}
 function calendarCard(large) {
   const now = new Date();
   const y = now.getFullYear(), m = now.getMonth();
@@ -1352,7 +1367,7 @@ function calendarCard(large) {
   entries.forEach((e) => {
     if (e.dueAt && !e.done) {
       const d = e.dueAt;
-      dueSet[d] = dueSet[d] || colorFor(e.tags[0] || "todo");
+      dueSet[d] = dueSet[d] || { color: colorFor(e.tags[0] || "todo"), type: e.type };
     }
   });
 
@@ -1361,7 +1376,7 @@ function calendarCard(large) {
   for (let d = 1; d <= daysInMonth; d++) {
     const iso = new Date(y, m, d).toISOString().slice(0, 10);
     const isToday = daysBetween(todayStart(), new Date(y, m, d)) === 0;
-    cells.push({ n: d, today: isToday, dot: dueSet[iso] });
+    cells.push({ n: d, today: isToday, due: dueSet[iso] });
   }
   let next = 1;
   while (cells.length % 7 !== 0) cells.push({ n: next++, dim: true });
@@ -1369,14 +1384,32 @@ function calendarCard(large) {
   let rows = "";
   for (let i = 0; i < cells.length; i += 7) {
     rows += "<tr>" + cells.slice(i, i + 7).map((c) =>
-      `<td class="${c.dim ? "dim" : ""}${c.today ? " today" : ""}">${c.n}${c.dot ? `<div class="dot ${c.dot}"></div>` : ""}</td>`
+      `<td class="${c.dim ? "dim" : ""}${c.today ? " today" : ""}">${c.n}` +
+      (c.due ? (large ? calendarStickerSvg(c.due.type, c.due.color) : calendarDotHtml(c.due.color)) : "") +
+      `</td>`
     ).join("") + "</tr>";
   }
+  const table = `<table class="cal"><tr><th>S</th><th>M</th><th>T</th><th>W</th><th>T</th><th>F</th><th>S</th></tr>${rows}</table>`;
 
-  const card = makeCard("graph" + (large ? " wide big-cal" : ""));
+  if (!large) {
+    const card = makeCard("graph");
+    card.innerHTML = `<div class="meta"><span>${monthName}</span><span class="tags"><span class="tag peri">#calendar</span></span></div>` + table;
+    return card;
+  }
+
+  // Big Month-tab view — a corkboard bulletin board with the calendar pinned to it like a sheet
+  // of paper, plus a row of placeholder slots reserved for the Pinterest photos/quotes (once
+  // that integration is wired up, these get replaced with the real cached pins).
+  const card = makeCard("bulletin-board");
   card.innerHTML =
+    `<div class="bulletin-sheet">` +
+    `<div class="pushpin rose"></div>` +
     `<div class="meta"><span>${monthName}</span><span class="tags"><span class="tag peri">#calendar</span></span></div>` +
-    `<table class="cal"><tr><th>S</th><th>M</th><th>T</th><th>W</th><th>T</th><th>F</th><th>S</th></tr>${rows}</table>`;
+    table +
+    `</div>` +
+    `<div class="bulletin-photos">` +
+    [0, 1, 2].map(() => `<div class="bulletin-photo placeholder"><div class="pushpin butter"></div><span>photos coming soon</span></div>`).join("") +
+    `</div>`;
   return card;
 }
 
