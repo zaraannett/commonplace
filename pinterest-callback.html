@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pinterest connect</title>
+<style>
+  body{background:#F7F3EB;color:#28231C;font-family:'Courier Prime',monospace;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:20px;}
+  .card{background:#FCFAF4;border:1px solid #DDD5C4;border-radius:6px;padding:24px;max-width:480px;}
+  h1{font-family:Georgia,serif;font-style:italic;font-weight:400;font-size:22px;margin:0 0 14px;}
+  code{display:block;background:#F7F3EB;border:1px solid #DDD5C4;border-radius:4px;padding:12px;word-break:break-all;font-size:13px;margin:10px 0;}
+  p{font-size:13px;line-height:1.5;color:#79715F;}
+  .err{color:#C25E7C;}
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>Pinterest connect</h1>
+  <div id="out">Reading the redirect…</div>
+</div>
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get("code");
+  const err = params.get("error");
+  const out = document.getElementById("out");
+  if (code) {
+    out.innerHTML = `<p>Copy this code and send it back:</p><code>${code}</code><p>It's single-use and short-lived, so send it over right away.</p>`;
+  } else if (err) {
+    out.innerHTML = `<p class="err">Pinterest returned an error: ${err}</p><p>${params.get("error_description") || ""}</p>`;
+  } else {
+    out.innerHTML = `<p class="err">No code found in the URL. Did you get here by following the authorize link?</p>`;
+  }
+</script>
+</body>
+</html>
