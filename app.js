@@ -1339,62 +1339,99 @@ function pinnedCards() {
   });
 }
 
-// A vintage-travel-poster-style trail map for Jackson Hole Mountain Resort, pinned to the
-// bulletin board — an original illustration (not a copy of any real ski-resort poster), built on
-// real facts about the resort: opened Dec. 28, 1965 (Paul McCollister, Alex Morley, Gordon
-// Graham); Rendezvous Mountain summits at 10,450ft with a 4,139ft vertical drop down to Teton
-// Village; 13 lifts (incl. the Aerial Tram, Teewinot and Thunder) across 131 trails.
+// A vintage-travel-BROCHURE-style trail map for Jackson Hole Mountain Resort, pinned to the
+// bulletin board — mimics the real 3-panel-fold layout of old ski brochures (a badge panel, then
+// two repeated wordmark panels, mountain illustration spanning underneath) rather than a single
+// poster. Original illustration, not a copy of any real resort's brochure. Built on real facts:
+// opened Dec. 28, 1965 (Paul McCollister, Alex Morley, Gordon Graham); Rendezvous Mountain
+// summits at 10,450ft with a 4,139ft vertical drop down to Teton Village; 13 lifts (incl. the
+// Aerial Tram, Teewinot and Thunder) across 131 trails.
 // Sources: jacksonhole.com/history, jacksonhole.com/corbets-couloir, Wikipedia "Jackson Hole
-// Mountain Resort". Inlined (not an <img src>) so its text can use the app's own already-loaded
-// Caveat/Courier Prime fonts instead of needing a font baked into the graphic.
-const JACKSON_HOLE_MAP_SVG = `<svg viewBox="0 0 400 520" width="400" height="520" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-  <rect width="400" height="520" fill="#1B4B7A"/>
-  <rect x="10" y="10" width="380" height="500" fill="none" stroke="#F4EFE1" stroke-width="1.5" stroke-dasharray="4 4" opacity="0.6"/>
-  <g transform="translate(70,78)">
-    <circle r="52" fill="#F4EFE1"/>
-    <circle r="46" fill="none" stroke="#1B4B7A" stroke-width="2"/>
-    <path id="jhArcTop" d="M -38 -8 A 40 40 0 0 1 38 -8" fill="none"/>
-    <path id="jhArcBot" d="M -32 20 A 34 34 0 0 0 32 20" fill="none"/>
-    <text font-family="'Courier Prime', monospace" font-weight="700" font-size="9.5" fill="#1B4B7A" letter-spacing="1.5"><textPath href="#jhArcTop" xlink:href="#jhArcTop" startOffset="50%" text-anchor="middle">JACKSON HOLE</textPath></text>
-    <text font-family="'Courier Prime', monospace" font-weight="700" font-size="8" fill="#1B4B7A" letter-spacing="2"><textPath href="#jhArcBot" xlink:href="#jhArcBot" startOffset="50%" text-anchor="middle">WYOMING</textPath></text>
-    <g transform="translate(-13,-6) scale(0.9)" fill="#1B4B7A">
+// Mountain Resort". Inlined (not an <img src>) so its text uses the app's own already-loaded
+// Oswald/Alex Brush fonts instead of needing fonts baked into the graphic.
+const JACKSON_HOLE_MAP_SVG = `<svg viewBox="0 0 630 460" width="630" height="460" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <defs>
+    <filter id="jhPaper" x="-5%" y="-5%" width="110%" height="110%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="3" seed="5" result="n"/>
+      <feColorMatrix in="n" type="saturate" values="0"/>
+      <feComponentTransfer><feFuncA type="linear" slope="0.22"/></feComponentTransfer>
+    </filter>
+    <radialGradient id="jhVignette" cx="50%" cy="45%" r="75%">
+      <stop offset="60%" stop-color="#000" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#000" stop-opacity="0.35"/>
+    </radialGradient>
+    <linearGradient id="jhCrease" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#000" stop-opacity="0"/>
+      <stop offset="45%" stop-color="#000" stop-opacity="0.28"/>
+      <stop offset="55%" stop-color="#fff" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <!-- aged paper base, textured -->
+  <rect width="630" height="460" fill="#2C4A63"/>
+  <rect width="630" height="460" filter="url(#jhPaper)" opacity="0.5"/>
+  <!-- panel 1: circular badge -->
+  <g transform="translate(105,110)">
+    <circle r="58" fill="#EDE6D3"/>
+    <circle r="52" fill="none" stroke="#2C4A63" stroke-width="2"/>
+    <path id="jhArcTop" d="M -42 -10 A 44 44 0 0 1 42 -10" fill="none"/>
+    <path id="jhArcBot" d="M -36 22 A 38 38 0 0 0 36 22" fill="none"/>
+    <text font-family="'Oswald', sans-serif" font-weight="700" font-size="10.5" fill="#2C4A63" letter-spacing="2"><textPath href="#jhArcTop" xlink:href="#jhArcTop" startOffset="50%" text-anchor="middle">JACKSON HOLE</textPath></text>
+    <text font-family="'Oswald', sans-serif" font-weight="500" font-size="9" fill="#2C4A63" letter-spacing="3"><textPath href="#jhArcBot" xlink:href="#jhArcBot" startOffset="50%" text-anchor="middle">WYOMING</textPath></text>
+    <g transform="translate(-14,-8)" fill="#2C4A63">
       <path d="M0 20 L0 8 C0 2 4 -2 9 -2 C10 -6 13 -9 16 -10 C15 -8 15 -6 16 -5 C19 -7 23 -7 25 -5 C22 -4 20 -2 20 0 C24 -1 27 1 27 4 C24 3 21 4 20 6 L20 20 L16 20 L16 10 L12 10 L12 20 L8 20 L8 12 C6 12 4 11 3 9 L3 20 Z"/>
     </g>
   </g>
-  <text x="205" y="60" font-family="'Caveat', cursive" font-weight="700" font-size="54" fill="#F4EFE1">ski</text>
-  <text x="207" y="90" font-family="'Courier Prime', monospace" font-weight="700" font-size="17" fill="#F4EFE1" letter-spacing="1">JACKSON HOLE</text>
-  <text x="207" y="106" font-family="'Courier Prime', monospace" font-size="10" fill="#F4EFE1" letter-spacing="1.5">TETON VILLAGE, WYOMING</text>
-  <text x="207" y="124" font-family="'Caveat', cursive" font-weight="600" font-size="15" fill="#F4EFE1">from November to April</text>
+  <text x="105" y="200" font-family="'Oswald', sans-serif" font-weight="500" font-size="11" fill="#EDE6D3" text-anchor="middle" letter-spacing="1">EST. 1965</text>
+  <!-- panels 2 + 3: repeated wordmark block, mimicking a real brochure's twin panels -->
+  <g transform="translate(215,50)">
+    <text x="0" y="46" font-family="'Alex Brush', cursive" font-size="52" fill="#EDE6D3">ski</text>
+    <text x="0" y="70" font-family="'Oswald', sans-serif" font-weight="700" font-size="20" fill="#EDE6D3" letter-spacing="0.5">JACKSON HOLE</text>
+    <text x="0" y="88" font-family="'Oswald', sans-serif" font-weight="500" font-size="11" fill="#EDE6D3" letter-spacing="1.5">TETON VILLAGE, WYOMING</text>
+    <text x="0" y="106" font-family="'Alex Brush', cursive" font-size="18" fill="#EDE6D3">from November to April</text>
+  </g>
+  <g transform="translate(425,50)">
+    <text x="0" y="46" font-family="'Alex Brush', cursive" font-size="52" fill="#EDE6D3">ski</text>
+    <text x="0" y="70" font-family="'Oswald', sans-serif" font-weight="700" font-size="20" fill="#EDE6D3" letter-spacing="0.5">JACKSON HOLE</text>
+    <text x="0" y="88" font-family="'Oswald', sans-serif" font-weight="500" font-size="11" fill="#EDE6D3" letter-spacing="1.5">TETON VILLAGE, WYOMING</text>
+    <text x="0" y="106" font-family="'Alex Brush', cursive" font-size="18" fill="#EDE6D3">from November to April</text>
+  </g>
+  <!-- fold creases dividing the 3 panels -->
+  <rect x="200" y="0" width="20" height="460" fill="url(#jhCrease)"/>
+  <rect x="410" y="0" width="20" height="460" fill="url(#jhCrease)"/>
+  <!-- mountain illustration, spanning the full width beneath the fold -->
   <g>
-    <path d="M20 340 L95 210 L150 300 L170 340 Z" fill="#AFC2CE"/>
-    <path d="M120 340 L235 155 L270 210 L300 175 L380 340 Z" fill="#D8DEDF"/>
-    <path d="M235 155 L270 210 L240 240 Z" fill="#AFC2CE"/>
-    <path d="M300 175 L380 340 L330 340 L310 260 Z" fill="#AFC2CE"/>
-    <path d="M225 172 L235 155 L246 175 L235 185 Z" fill="#F4EFE1"/>
-    <path d="M0 340 L10 332 L18 340 L26 330 L34 340 L42 333 L50 340 L58 331 L66 340 L74 334 L82 340 L90 329 L98 340 L106 333 L114 340 L122 331 L130 340 L138 334 L146 340 L154 330 L162 340 L170 333 L178 340 L186 331 L194 340 L202 334 L210 340 L218 330 L226 340 L234 333 L242 340 L250 331 L258 340 L266 334 L274 340 L282 330 L290 340 L298 333 L306 340 L314 331 L322 340 L330 334 L338 340 L346 330 L354 340 L362 333 L370 340 L378 331 L386 340 L394 334 L400 340 L400 360 L0 360 Z" fill="#12324f"/>
+    <path d="M20 440 L140 260 L220 400 L250 440 Z" fill="#9FB3C0"/>
+    <path d="M180 440 L340 190 L390 265 L440 215 L610 440 Z" fill="#CBD3D6"/>
+    <path d="M340 190 L390 265 L355 305 Z" fill="#9FB3C0"/>
+    <path d="M440 215 L610 440 L520 440 L490 320 Z" fill="#9FB3C0"/>
+    <path d="M328 212 L340 190 L354 213 L340 226 Z" fill="#EDE6D3"/>
+    <path d="M0 440 L12 430 L22 440 L32 428 L42 440 L52 431 L62 440 L72 429 L82 440 L92 432 L102 440 L112 427 L122 440 L132 431 L142 440 L152 429 L162 440 L172 432 L182 440 L192 428 L202 440 L212 431 L222 440 L232 429 L242 440 L252 432 L262 440 L272 428 L282 440 L292 431 L302 440 L312 429 L322 440 L332 432 L342 440 L352 428 L362 440 L372 431 L382 440 L392 429 L402 440 L412 432 L422 440 L432 428 L442 440 L452 431 L462 440 L472 429 L482 440 L492 432 L502 440 L512 428 L522 440 L532 431 L542 440 L552 429 L562 440 L572 432 L582 440 L592 428 L602 440 L612 431 L622 440 L630 434 L630 460 L0 460 Z" fill="#182f42"/>
   </g>
-  <g stroke-width="2" fill="none" stroke-linecap="round">
-    <path d="M235 158 L150 300" stroke="#E4B84A"/>
-    <path d="M235 158 L190 320" stroke="#C0567A"/>
-    <path d="M270 213 L230 320" stroke="#7FA872"/>
-    <path d="M300 178 L280 320" stroke="#E4B84A"/>
-    <path d="M300 178 L320 330" stroke="#C0567A"/>
+  <g stroke-width="2.5" fill="none" stroke-linecap="round">
+    <path d="M340 193 L230 400" stroke="#D9A441"/>
+    <path d="M340 193 L280 425" stroke="#B5502F"/>
+    <path d="M390 268 L350 425" stroke="#7FA872"/>
+    <path d="M440 218 L410 425" stroke="#D9A441"/>
+    <path d="M440 218 L470 430" stroke="#B5502F"/>
   </g>
-  <g font-family="'Courier Prime', monospace" font-size="8.5" fill="#F4EFE1">
-    <circle cx="235" cy="158" r="4" fill="#F4EFE1"/><text x="242" y="152">TRAM</text>
-    <circle cx="270" cy="213" r="4" fill="#F4EFE1"/><text x="277" y="210">TEEWINOT</text>
-    <circle cx="300" cy="178" r="4" fill="#F4EFE1"/><text x="307" y="175">THUNDER</text>
+  <g font-family="'Oswald', sans-serif" font-weight="500" font-size="10" fill="#EDE6D3">
+    <circle cx="340" cy="193" r="4.5" fill="#EDE6D3"/><text x="348" y="188">TRAM</text>
+    <circle cx="390" cy="268" r="4.5" fill="#EDE6D3"/><text x="398" y="265">TEEWINOT</text>
+    <circle cx="440" cy="218" r="4.5" fill="#EDE6D3"/><text x="448" y="214">THUNDER</text>
   </g>
-  <g transform="translate(30,388)">
-    <rect width="340" height="100" fill="#F4EFE1" opacity="0.95"/>
-    <text x="14" y="22" font-family="'Courier Prime', monospace" font-weight="700" font-size="12" fill="#1B4B7A" letter-spacing="1">JACKSON HOLE MOUNTAIN RESORT</text>
-    <text x="14" y="40" font-family="'Courier Prime', monospace" font-size="9.5" fill="#1B4B7A">EST. 1965 · TETON VILLAGE, WY</text>
-    <line x1="14" y1="50" x2="326" y2="50" stroke="#1B4B7A" stroke-width="0.75" opacity="0.4"/>
-    <text x="14" y="68" font-family="'Courier Prime', monospace" font-size="9.5" fill="#1B4B7A">SUMMIT: 10,450 FT</text>
-    <text x="14" y="82" font-family="'Courier Prime', monospace" font-size="9.5" fill="#1B4B7A">VERTICAL DROP: 4,139 FT</text>
-    <text x="180" y="68" font-family="'Courier Prime', monospace" font-size="9.5" fill="#1B4B7A">13 LIFTS</text>
-    <text x="180" y="82" font-family="'Courier Prime', monospace" font-size="9.5" fill="#1B4B7A">131 TRAILS</text>
+  <!-- stats box -->
+  <g transform="translate(430,370)">
+    <rect width="180" height="72" fill="#EDE6D3" opacity="0.95"/>
+    <text x="10" y="18" font-family="'Oswald', sans-serif" font-weight="700" font-size="10" fill="#2C4A63" letter-spacing="0.5">JACKSON HOLE MTN RESORT</text>
+    <line x1="10" y1="26" x2="170" y2="26" stroke="#2C4A63" stroke-width="0.6" opacity="0.4"/>
+    <text x="10" y="42" font-family="'Oswald', sans-serif" font-size="9.5" fill="#2C4A63">SUMMIT: 10,450 FT</text>
+    <text x="10" y="56" font-family="'Oswald', sans-serif" font-size="9.5" fill="#2C4A63">VERTICAL DROP: 4,139 FT</text>
+    <text x="10" y="68" font-family="'Oswald', sans-serif" font-size="9.5" fill="#2C4A63">13 LIFTS · 131 TRAILS</text>
   </g>
+  <!-- aged vignette + border on top -->
+  <rect width="630" height="460" fill="url(#jhVignette)"/>
+  <rect x="4" y="4" width="622" height="452" fill="none" stroke="#EDE6D3" stroke-width="2" opacity="0.85"/>
 </svg>`;
 
 // The plain flat dot the small Everything-board calendar has always used — untouched.
