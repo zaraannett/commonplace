@@ -224,12 +224,12 @@ function updateEntryDrawing(id, drawing) {
 // ── task boxes (mood-board Tasks tab) ─────────────────────────────────
 const UNSORTED_BOX = "_unsorted";
 let expandedTaskIds = new Set();
-let sketchModeTaskIds = new Set(); // of expandedTaskIds, which are showing the canvas instead of the bullet textarea
-let editingSketchIds = new Set(); // diary entries currently showing their canvas
+// Drawing now always happens in the full-screen #sketchOverlay (see openSketchOverlay below),
+// never inline in a card, so there's only ever at most one entry being sketched at a time.
+let sketchOverlayEntryId = null;
+let sketchOverlayCtl = null;
 function anySketchEditingOpen() {
-  if (editingSketchIds.size) return true;
-  for (const id of sketchModeTaskIds) if (expandedTaskIds.has(id)) return true;
-  return false;
+  return sketchOverlayEntryId !== null;
 }
 function addTaskBox() {
   const title = prompt("New box name:");
@@ -557,26 +557,18 @@ function bulletListHtml(text) {
 }
 function taskDetailCard(e) {
   const editing = expandedTaskIds.has(e.id);
-  // Default to sketch mode when reopening a task whose only content is ink (no bullet text yet).
-  const sketching = editing && (sketchModeTaskIds.has(e.id) || (hasInk(e) && !(e.title && e.title.trim())));
-  const inPaperMode = sketching || hasInk(e);
+  // A task whose only content is ink (no bullet text yet) stays in its drawing view regardless
+  // of expand/collapse — there's no textarea to fall back to, and drawing itself now always
+  // happens in the full-screen overlay, never inline here.
+  const preferSketch = hasInk(e) && !(e.title && e.title.trim());
   // A sketched task's whole card is paper too — same reasoning as diary, no box-behind-paper.
-  const card = makeCard(inPaperMode ? `sketch-card ${paperClassOf(e.drawing)}` : "postit");
+  const card = makeCard(hasInk(e) ? `sketch-card ${paperClassOf(e.drawing)}` : "postit");
   let detail;
-  if (editing && sketching) {
-    detail = `<div class="sketchpad-wrap"><canvas class="sketchpad" style="height:${sketchCanvasHeight(e.type, e.drawing)}px" data-sketch="${e.id}"></canvas>
-      ${penToolbarHtml(e.id)}
-      <div class="sketch-toolbar">
-        <button type="button" class="sketch-btn" data-sketch-undo="${e.id}">undo</button>
-        <button type="button" class="sketch-btn" data-sketch-clear="${e.id}">clear</button>
-        <button type="button" class="sketch-btn" data-mode-toggle="${e.id}">Aa type instead</button>
-        <button type="button" class="sketch-btn" data-sketch-done="${e.id}">done</button>
-      </div></div>`;
+  if (preferSketch) {
+    detail = `<div class="postit-bullets-wrap" data-open-sketch="${e.id}">${renderStaticImage(e.drawing, "sketch-view", sketchCanvasHeight(e.type, e.drawing))}</div>`;
   } else if (editing) {
     detail = `<textarea class="postit-editor" data-detail-input="${e.id}" placeholder="– one point per line…">${escapeHtml(e.title || "")}</textarea>
-      <button type="button" class="sketch-btn mode-switch" data-mode-toggle="${e.id}">✎ draw instead</button>`;
-  } else if (hasInk(e)) {
-    detail = `<div class="postit-bullets-wrap" data-detail-toggle="${e.id}">${renderStaticImage(e.drawing, "sketch-view")}</div>`;
+      <button type="button" class="sketch-btn mode-switch" data-open-sketch="${e.id}">✎ draw instead</button>`;
   } else {
     detail = `<div class="postit-bullets-wrap" data-detail-toggle="${e.id}">${bulletListHtml(e.title)}</div>`;
   }
@@ -596,25 +588,11 @@ function taskDetailCard(e) {
     expandedTaskIds.add(e.id);
     render();
   }));
-  card.querySelectorAll("[data-mode-toggle]").forEach((el) => el.addEventListener("click", (ev) => {
+  card.querySelectorAll("[data-open-sketch]").forEach((el) => el.addEventListener("click", (ev) => {
     ev.stopPropagation();
-    if (sketchModeTaskIds.has(e.id)) sketchModeTaskIds.delete(e.id);
-    else { sketchModeTaskIds.add(e.id); if (!e.drawing) e.drawing = { w: 0, h: 0, strokes: [], ...randomDrawingMeta() }; }
-    render();
+    if (!e.drawing) e.drawing = { w: 0, h: 0, strokes: [], ...randomDrawingMeta() };
+    openSketchOverlay(e);
   }));
-  card.querySelectorAll("[data-sketch-done]").forEach((el) => el.addEventListener("click", (ev) => {
-    ev.stopPropagation();
-    expandedTaskIds.delete(e.id);
-    sketchModeTaskIds.delete(e.id);
-    render();
-  }));
-  if (editing && sketching) {
-    wirePenToolbar(card);
-    const canvas = card.querySelector("canvas.sketchpad");
-    const ctl = initSketchpad(canvas, e.drawing, (d) => updateEntryDrawing(e.id, d), () => revealPenPicker(card, e.id));
-    card.querySelector("[data-sketch-undo]").addEventListener("click", (ev) => { ev.stopPropagation(); ctl.undo(); });
-    card.querySelector("[data-sketch-clear]").addEventListener("click", (ev) => { ev.stopPropagation(); ctl.clear(); });
-  }
   const ta = card.querySelector("textarea[data-detail-input]");
   if (ta) requestAnimationFrame(() => ta.focus());
   return card;
@@ -682,29 +660,15 @@ function diaryCards() {
   return entries.filter((e) => e.type === "diary" && matchesFilter(e)).map((e) => {
     const date = new Date(e.createdAt);
     const dateStr = date.toLocaleDateString("en-US", { month: "short", day: "numeric" }) + " · " + date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
-    const sketching = editingSketchIds.has(e.id);
-    const inPaperMode = sketching || hasInk(e);
     // A sketch's whole card IS the paper — date/tags sit directly on it, no card-behind-paper box.
-    const card = makeCard("diary" + (inPaperMode ? ` sketch-card ${paperClassOf(e.drawing)}` : ""));
+    // Drawing itself always happens in the full-screen #sketchOverlay, never inline in this card.
+    const card = makeCard("diary" + (hasInk(e) ? ` sketch-card ${paperClassOf(e.drawing)}` : ""));
     card.dataset.entryId = e.id;
-    let body;
-    if (sketching) {
-      body = `<div class="sketchpad-wrap"><canvas class="sketchpad" style="height:${sketchCanvasHeight(e.type, e.drawing)}px" data-sketch="${e.id}"></canvas>
-        ${penToolbarHtml(e.id)}
-        <div class="sketch-toolbar">
-          <button type="button" class="sketch-btn" data-sketch-undo="${e.id}">undo</button>
-          <button type="button" class="sketch-btn" data-sketch-clear="${e.id}">clear</button>
-          <button type="button" class="sketch-btn" data-sketch-done="${e.id}">done</button>
-        </div></div>`;
-    } else if (hasInk(e)) {
-      body = renderStaticImage(e.drawing, "sketch-view");
-    } else {
-      body = `<p>${escapeHtml(e.body)}</p>`;
-    }
+    const body = hasInk(e) ? renderStaticImage(e.drawing, "sketch-view", sketchCanvasHeight(e.type, e.drawing)) : `<p>${escapeHtml(e.body)}</p>`;
     card.innerHTML =
       `<div class="meta"><span>${dateStr}</span><span class="tags">${e.tags.map((t) => tagSpan(t)).join(" ")}` +
       `<span class="boxclose" data-addtag="${e.id}" title="add tag">+</span>` +
-      `<span class="boxclose" data-sketch-toggle="${e.id}" title="${sketching ? "cancel drawing" : "draw"}">${sketching ? "Aa" : "✎"}</span>` +
+      `<span class="boxclose" data-open-sketch="${e.id}" title="draw">✎</span>` +
       `<span class="boxclose" data-del="${e.id}" title="delete">✕</span></span></div>` +
       (e.title ? `<h2>${escapeHtml(e.title)}</h2>` : "") +
       body;
@@ -713,24 +677,11 @@ function diaryCards() {
       deleteEntry(x.dataset.del);
     }));
     wireAddTag(card);
-    card.querySelectorAll("[data-sketch-toggle]").forEach((x) => x.addEventListener("click", (ev) => {
+    card.querySelectorAll("[data-open-sketch]").forEach((x) => x.addEventListener("click", (ev) => {
       ev.stopPropagation();
-      if (editingSketchIds.has(e.id)) editingSketchIds.delete(e.id);
-      else { editingSketchIds.add(e.id); if (!e.drawing) e.drawing = { w: 0, h: 0, strokes: [], ...randomDrawingMeta() }; }
-      render();
+      if (!e.drawing) e.drawing = { w: 0, h: 0, strokes: [], ...randomDrawingMeta() };
+      openSketchOverlay(e);
     }));
-    card.querySelectorAll("[data-sketch-done]").forEach((x) => x.addEventListener("click", (ev) => {
-      ev.stopPropagation();
-      editingSketchIds.delete(e.id);
-      render();
-    }));
-    if (sketching) {
-      wirePenToolbar(card);
-      const canvas = card.querySelector("canvas.sketchpad");
-      const ctl = initSketchpad(canvas, e.drawing, (d) => updateEntryDrawing(e.id, d), () => revealPenPicker(card, e.id));
-      card.querySelector("[data-sketch-undo]").addEventListener("click", (ev) => { ev.stopPropagation(); ctl.undo(); });
-      card.querySelector("[data-sketch-clear]").addEventListener("click", (ev) => { ev.stopPropagation(); ctl.clear(); });
-    }
     return card;
   });
 }
@@ -829,6 +780,8 @@ const POSTIT_SKETCH_HEIGHTS = { sm: 110, md: 150, lg: 200 };
 function randomSketchSize() {
   return SKETCH_SIZE_KEYS[Math.floor(Math.random() * SKETCH_SIZE_KEYS.length)];
 }
+// Caps how tall a saved sketch reads on the board (see renderStaticImage) — not the live editing
+// canvas, which is always full-screen now.
 function sketchCanvasHeight(entryType, drawing) {
   const key = (drawing && drawing.sizeKey) || "md";
   const table = entryType === "task" ? POSTIT_SKETCH_HEIGHTS : DIARY_SKETCH_HEIGHTS;
@@ -959,7 +912,7 @@ function paintStroke(ctx, stroke) {
 // used while drawing means there's one rendering path, not two, and erasing "just works" in the
 // saved view for free. Traded infinite vector crispness for a 2x-resolution raster image, which
 // reads as crisp as this UI ever needed anyway.
-function renderStaticImage(drawing, cls) {
+function renderStaticImage(drawing, cls, maxHeight) {
   if (!drawing || !drawing.strokes || !drawing.strokes.length) return "";
   const dpr = 2;
   const w = drawing.w || 300, h = drawing.h || 200;
@@ -969,7 +922,11 @@ function renderStaticImage(drawing, cls) {
   const ctx = c.getContext("2d");
   ctx.scale(dpr, dpr);
   drawing.strokes.map(normalizeStroke).forEach((s) => paintStroke(ctx, s));
-  return `<img class="${cls}" src="${c.toDataURL()}" width="${w}" height="${h}" alt=""/>`;
+  // Sketching now always happens full-screen (see openSketchOverlay), so the sm/md/lg rolled in
+  // randomDrawingMeta() no longer comes from the editing canvas's own height — it's applied here
+  // instead, as a cap on the saved image, so the board still reads as a varied page of sketches.
+  const style = maxHeight ? ` style="max-height:${maxHeight}px"` : "";
+  return `<img class="${cls}" src="${c.toDataURL()}" width="${w}" height="${h}" alt=""${style}/>`;
 }
 function hasInk(e) {
   return !!(e.drawing && e.drawing.strokes && e.drawing.strokes.length);
@@ -1022,6 +979,40 @@ function wirePenToolbar(card) {
     currentPenSize = btn.dataset.penSize;
     card.querySelectorAll("[data-pen-size]").forEach((b) => b.classList.toggle("active", b === btn));
   }));
+}
+
+function sketchOverlayBodyHtml(entryId) {
+  return `<canvas class="sketchpad" data-sketch="${entryId}"></canvas>` +
+    penToolbarHtml(entryId) +
+    `<div class="sketch-toolbar">` +
+    `<button type="button" class="sketch-btn" data-sketch-undo="${entryId}">undo</button>` +
+    `<button type="button" class="sketch-btn" data-sketch-clear="${entryId}">clear</button>` +
+    `</div>`;
+}
+// Full-screen sketch mode — opened by tapping ✎ on a diary card or "draw instead"/"edit sketch"
+// on a task post-it. A small inline canvas is exactly where palm-rejection gets worse (less room,
+// more incidental contact) and there's no room left over for real zoom, so drawing now always
+// happens here instead, with the whole viewport as the page.
+function openSketchOverlay(e) {
+  sketchOverlayEntryId = e.id;
+  const overlay = document.getElementById("sketchOverlay");
+  const body = document.getElementById("sketchOverlayBody");
+  document.getElementById("sketchOverlayLabel").textContent = e.type === "diary" ? "diary sketch" : "task sketch";
+  overlay.classList.add("open");
+  body.innerHTML = sketchOverlayBodyHtml(e.id);
+  wirePenToolbar(body);
+  const canvas = body.querySelector("canvas.sketchpad");
+  sketchOverlayCtl = initSketchpad(canvas, e.drawing, (d) => updateEntryDrawing(e.id, d), () => revealPenPicker(body, e.id));
+  body.querySelector("[data-sketch-undo]").addEventListener("click", () => sketchOverlayCtl.undo());
+  body.querySelector("[data-sketch-clear]").addEventListener("click", () => sketchOverlayCtl.clear());
+}
+function closeSketchOverlay() {
+  document.getElementById("sketchOverlay").classList.remove("open");
+  if (sketchOverlayCtl) sketchOverlayCtl.destroy();
+  document.getElementById("sketchOverlayBody").innerHTML = "";
+  sketchOverlayEntryId = null;
+  sketchOverlayCtl = null;
+  render();
 }
 
 // Wires pointer events onto a blank canvas for freehand drawing. Palm rejection is simple but
@@ -1106,9 +1097,17 @@ function initSketchpad(canvas, drawing, onChange, onPencilStart) {
   // until the card is actually laid out.
   requestAnimationFrame(resize);
   setTimeout(resize, 300);
+  // The full-screen overlay's canvas is layout-sized (flex:1), not fixed-height like the old
+  // inline one — an iPad rotation mid-sketch would otherwise leave the drawing buffer at its
+  // original size while the CSS box changes shape, stretching everything painted so far. Existing
+  // strokes stay anchored at their original (CSS-pixel) position rather than being rescaled, so
+  // growing the canvas just reveals more blank page, which reads correctly either way.
+  const resizeObserver = new ResizeObserver(resize);
+  resizeObserver.observe(canvas);
   return {
     undo() { strokes.pop(); redraw(); drawing.strokes = strokes; onChange(drawing); },
     clear() { strokes = []; redraw(); drawing.strokes = strokes; onChange(drawing); },
+    destroy() { resizeObserver.disconnect(); },
   };
 }
 
@@ -1300,8 +1299,8 @@ function buildBoardCards() {
     addSketchTile.innerHTML = `<div class="meta"><span>+ new sketch</span></div>`;
     addSketchTile.addEventListener("click", () => {
       const e = addEntry({ type: "diary", drawing: { w: 0, h: 0, strokes: [], ...randomDrawingMeta() } });
-      editingSketchIds.add(e.id);
       render();
+      openSketchOverlay(e);
     });
     list.push({ id: "add-diary-sketch", el: addSketchTile });
   } else if (activeNavId === "people") {
@@ -1675,6 +1674,7 @@ document.getElementById("navMenuToggle").addEventListener("click", () => {
   toggle.classList.toggle("open", navMenuOpen);
   toggle.setAttribute("aria-expanded", String(navMenuOpen));
 });
+document.getElementById("sketchOverlayDone").addEventListener("click", closeSketchOverlay);
 
 // ── boot ─────────────────────────────────────────────────────────────
 drawBand();

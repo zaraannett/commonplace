@@ -131,6 +131,17 @@
   </div>
 </div>
 
+<!-- ═══ FULL-SCREEN SKETCH OVERLAY ═══ -->
+<!-- Opened from a diary/task card's ✎ button — gives the pen a full page to work with instead of
+     a small canvas embedded in a card, which is where zoom and palm-rejection problems get worse. -->
+<div class="sketch-overlay" id="sketchOverlay">
+  <div class="sketch-overlay-head">
+    <span class="sketch-overlay-label" id="sketchOverlayLabel">sketch</span>
+    <button type="button" class="sketch-overlay-done" id="sketchOverlayDone">done ✓</button>
+  </div>
+  <div class="sketch-overlay-body" id="sketchOverlayBody"></div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="config.js"></script>
 <script src="app.js"></script>

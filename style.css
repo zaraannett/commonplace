@@ -329,6 +329,36 @@ canvas#band{display:block;width:100%;height:32px;margin-top:16px;border-radius:2
 .sketch-view{display:block;width:100%;height:auto;max-height:260px;}
 .card.postit .sketch-view{max-height:170px;}
 
+/* ── full-screen sketch overlay — real room to draw, instead of a canvas cramped inside a card.
+   Reuses the exact same pen-toolbar/sketchpad markup + JS as the card view, just laid out to
+   fill the viewport. ── */
+.sketch-overlay{
+  display:none;position:fixed;inset:0;z-index:300;background:var(--paper);
+  flex-direction:column;
+}
+.sketch-overlay.open{display:flex;}
+.sketch-overlay-head{
+  display:flex;align-items:center;justify-content:space-between;flex:0 0 auto;
+  padding:14px 18px;padding-top:calc(14px + env(safe-area-inset-top,0px));
+  border-bottom:1px solid var(--line);
+}
+.sketch-overlay-label{font-family:'Newsreader',serif;font-style:italic;font-size:16px;color:var(--soft);}
+.sketch-overlay-done{
+  background:none;border:1px solid var(--ink);border-radius:99px;padding:5px 16px;
+  color:var(--ink);font-weight:600;cursor:pointer;font-family:'Courier Prime',monospace;font-size:12px;
+}
+.sketch-overlay-body{
+  flex:1 1 auto;min-height:0;overflow-y:auto;padding:14px 18px;
+  padding-bottom:calc(14px + env(safe-area-inset-bottom,0px));
+  display:flex;flex-direction:column;
+}
+.sketch-overlay-body .sketchpad{
+  flex:1 1 auto;min-height:300px;width:100%;height:auto;
+  order:1;border:1px solid var(--line);border-radius:2px;background:var(--card);
+}
+.sketch-overlay-body .pen-picker{order:2;margin-top:10px;}
+.sketch-overlay-body .sketch-toolbar{order:3;margin-top:10px;flex:0 0 auto;}
+
 /* ── paper styles — a sketch's whole card IS the paper (date/tags sit right on it), picked
    randomly per drawing so a page of notes doesn't all look the same. Placed after .postit/.butter/
    etc. so equal-specificity `.card.paper-X` wins the cascade over those base card looks. ── */
