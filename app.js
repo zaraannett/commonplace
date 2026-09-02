@@ -1347,7 +1347,7 @@ function pinnedCards() {
 // Sources: jacksonhole.com/history, jacksonhole.com/corbets-couloir, Wikipedia "Jackson Hole
 // Mountain Resort". Inlined (not an <img src>) so its text can use the app's own already-loaded
 // Caveat/Courier Prime fonts instead of needing a font baked into the graphic.
-const JACKSON_HOLE_MAP_SVG = `<svg viewBox="0 0 400 520" xmlns="http://www.w3.org/2000/svg">
+const JACKSON_HOLE_MAP_SVG = `<svg viewBox="0 0 400 520" width="400" height="520" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
   <rect width="400" height="520" fill="#1B4B7A"/>
   <rect x="10" y="10" width="380" height="500" fill="none" stroke="#F4EFE1" stroke-width="1.5" stroke-dasharray="4 4" opacity="0.6"/>
   <g transform="translate(70,78)">
@@ -1355,8 +1355,8 @@ const JACKSON_HOLE_MAP_SVG = `<svg viewBox="0 0 400 520" xmlns="http://www.w3.or
     <circle r="46" fill="none" stroke="#1B4B7A" stroke-width="2"/>
     <path id="jhArcTop" d="M -38 -8 A 40 40 0 0 1 38 -8" fill="none"/>
     <path id="jhArcBot" d="M -32 20 A 34 34 0 0 0 32 20" fill="none"/>
-    <text font-family="'Courier Prime', monospace" font-weight="700" font-size="9.5" fill="#1B4B7A" letter-spacing="1.5"><textPath href="#jhArcTop" startOffset="50%" text-anchor="middle">JACKSON HOLE</textPath></text>
-    <text font-family="'Courier Prime', monospace" font-weight="700" font-size="8" fill="#1B4B7A" letter-spacing="2"><textPath href="#jhArcBot" startOffset="50%" text-anchor="middle">WYOMING</textPath></text>
+    <text font-family="'Courier Prime', monospace" font-weight="700" font-size="9.5" fill="#1B4B7A" letter-spacing="1.5"><textPath href="#jhArcTop" xlink:href="#jhArcTop" startOffset="50%" text-anchor="middle">JACKSON HOLE</textPath></text>
+    <text font-family="'Courier Prime', monospace" font-weight="700" font-size="8" fill="#1B4B7A" letter-spacing="2"><textPath href="#jhArcBot" xlink:href="#jhArcBot" startOffset="50%" text-anchor="middle">WYOMING</textPath></text>
     <g transform="translate(-13,-6) scale(0.9)" fill="#1B4B7A">
       <path d="M0 20 L0 8 C0 2 4 -2 9 -2 C10 -6 13 -9 16 -10 C15 -8 15 -6 16 -5 C19 -7 23 -7 25 -5 C22 -4 20 -2 20 0 C24 -1 27 1 27 4 C24 3 21 4 20 6 L20 20 L16 20 L16 10 L12 10 L12 20 L8 20 L8 12 C6 12 4 11 3 9 L3 20 Z"/>
     </g>
