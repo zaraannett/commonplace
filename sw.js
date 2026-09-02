@@ -10,8 +10,8 @@
 // files with real Cache-Control lifetimes, so a plain fetch() can be silently satisfied by the
 // browser's HTTP cache without a real round-trip, and a code update wouldn't show up even though
 // this logic looks like it's always asking the network first.
-const CACHE = "commonplace-shell-v3";
-const SHELL = ["./", "./index.html", "./style.css", "./app.js", "./config.js", "./manifest.json"];
+const CACHE = "commonplace-shell-v4";
+const SHELL = ["./", "./index.html", "./config.js", "./manifest.json"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(SHELL)));

@@ -2085,7 +2085,24 @@ enableDragReorder(document.getElementById("nav"), {
   onReorder: saveNavOrder,
 });
 if ("serviceWorker" in navigator) {
-  addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+  // A previous version only registered once and never checked again — fine for a fresh browser
+  // tab (every navigation re-checks automatically), but an iOS "Add to Home Screen" app that's
+  // resumed from the app switcher rather than freshly launched never fires a new navigation, so
+  // it could sit on a stale service worker indefinitely. Proactively polling for an update, and
+  // reloading once a new one actually takes over, means a code change shows up on the next time
+  // the app is merely brought to the foreground, not only on a fresh launch.
+  addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js").then((reg) => {
+      reg.update().catch(() => {});
+      setInterval(() => reg.update().catch(() => {}), 60 * 60 * 1000);
+    }).catch(() => {});
+  });
+  let swRefreshed = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (swRefreshed) return;
+    swRefreshed = true;
+    location.reload();
+  });
 }
 
 (async function boot() {

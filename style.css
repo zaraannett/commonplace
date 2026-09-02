@@ -544,15 +544,19 @@ canvas#band{display:block;width:100%;height:32px;margin-top:16px;border-radius:2
    map's corner instead of sitting cleanly beside it — z-index above the map so it visually reads
    as "pinned on top of" it where they intersect. */
 .bulletin-sheet{
-  position:absolute;top:165px;left:36%;z-index:3;background:#FFFDF6;border:1px solid #E4E0D4;border-radius:2px;
+  position:absolute;top:165px;left:34%;z-index:3;border:1px solid #E4E0D4;border-radius:2px;
+  background-color:#FFFDF6;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' seed='2'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='linear' slope='0.05'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23p)'/%3E%3C/svg%3E");
   padding:28px 32px 32px;box-shadow:0 8px 20px rgba(40,35,28,.34);transform:rotate(1.5deg);
-  width:420px;max-width:64%;
+  width:500px;max-width:74%;
 }
+/* The month title stays distinctive (it's the "headline" sitting on top of the sheet); the grid
+   itself goes back to a plain, legible face instead of the handwritten Klee One it had. */
 .bulletin-sheet .meta{margin-bottom:12px;justify-content:center;}
-.bulletin-sheet .meta span:first-child{font-family:'Newsreader',serif;font-style:italic;font-size:32px;}
+.bulletin-sheet .meta span:first-child{font-family:'Newsreader',serif;font-style:italic;font-size:34px;}
 .bulletin-sheet .cal{margin-top:10px;}
 .bulletin-sheet .cal th{font-size:14px;padding-bottom:14px;}
-.bulletin-sheet .cal td{font-family:'Klee One',cursive;font-size:22px;padding:18px 0;}
+.bulletin-sheet .cal td{font-family:'Courier Prime',monospace;font-size:20px;padding:19px 0;}
 .bulletin-sheet .cal-sticker{width:24px;height:24px;bottom:4px;}
 
 .bulletin-photo{
