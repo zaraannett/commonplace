@@ -1354,22 +1354,30 @@ const JACKSON_HOLE_MAP_SVG = `<svg viewBox="0 0 630 460" width="630" height="460
     <filter id="jhPaper" x="-5%" y="-5%" width="110%" height="110%">
       <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="3" seed="5" result="n"/>
       <feColorMatrix in="n" type="saturate" values="0"/>
-      <feComponentTransfer><feFuncA type="linear" slope="0.22"/></feComponentTransfer>
+      <feComponentTransfer><feFuncA type="linear" slope="0.4"/></feComponentTransfer>
     </filter>
     <radialGradient id="jhVignette" cx="50%" cy="45%" r="75%">
-      <stop offset="60%" stop-color="#000" stop-opacity="0"/>
-      <stop offset="100%" stop-color="#000" stop-opacity="0.35"/>
+      <stop offset="55%" stop-color="#000" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#1a0f04" stop-opacity="0.5"/>
     </radialGradient>
     <linearGradient id="jhCrease" x1="0" y1="0" x2="1" y2="0">
       <stop offset="0%" stop-color="#000" stop-opacity="0"/>
-      <stop offset="45%" stop-color="#000" stop-opacity="0.28"/>
-      <stop offset="55%" stop-color="#fff" stop-opacity="0.18"/>
-      <stop offset="100%" stop-color="#fff" stop-opacity="0"/>
+      <stop offset="42%" stop-color="#000" stop-opacity="0.32"/>
+      <stop offset="50%" stop-color="#EDE6D3" stop-opacity="0.4"/>
+      <stop offset="58%" stop-color="#000" stop-opacity="0.32"/>
+      <stop offset="100%" stop-color="#000" stop-opacity="0"/>
     </linearGradient>
   </defs>
-  <!-- aged paper base, textured -->
+  <!-- aged, textured paper base -->
   <rect width="630" height="460" fill="#2C4A63"/>
-  <rect width="630" height="460" filter="url(#jhPaper)" opacity="0.5"/>
+  <rect width="630" height="460" filter="url(#jhPaper)" opacity="0.65"/>
+  <!-- foxing / age-stain blotches -->
+  <g opacity="0.5">
+    <circle cx="80" cy="380" r="55" fill="#5a3c1e" opacity="0.18"/>
+    <circle cx="560" cy="60" r="70" fill="#5a3c1e" opacity="0.15"/>
+    <circle cx="480" cy="330" r="40" fill="#3d2810" opacity="0.14"/>
+    <circle cx="150" cy="60" r="35" fill="#3d2810" opacity="0.12"/>
+  </g>
   <!-- panel 1: circular badge -->
   <g transform="translate(105,110)">
     <circle r="58" fill="#EDE6D3"/>
@@ -1378,23 +1386,32 @@ const JACKSON_HOLE_MAP_SVG = `<svg viewBox="0 0 630 460" width="630" height="460
     <path id="jhArcBot" d="M -36 22 A 38 38 0 0 0 36 22" fill="none"/>
     <text font-family="'Oswald', sans-serif" font-weight="700" font-size="10.5" fill="#2C4A63" letter-spacing="2"><textPath href="#jhArcTop" xlink:href="#jhArcTop" startOffset="50%" text-anchor="middle">JACKSON HOLE</textPath></text>
     <text font-family="'Oswald', sans-serif" font-weight="500" font-size="9" fill="#2C4A63" letter-spacing="3"><textPath href="#jhArcBot" xlink:href="#jhArcBot" startOffset="50%" text-anchor="middle">WYOMING</textPath></text>
-    <g transform="translate(-14,-8)" fill="#2C4A63">
-      <path d="M0 20 L0 8 C0 2 4 -2 9 -2 C10 -6 13 -9 16 -10 C15 -8 15 -6 16 -5 C19 -7 23 -7 25 -5 C22 -4 20 -2 20 0 C24 -1 27 1 27 4 C24 3 21 4 20 6 L20 20 L16 20 L16 10 L12 10 L12 20 L8 20 L8 12 C6 12 4 11 3 9 L3 20 Z"/>
+    <!-- moose head, front-facing -->
+    <g transform="translate(0,-4)" fill="#2C4A63">
+      <path d="M-7 -4 C-9 3 -8 12 -4 19 C-2 22 2 22 4 19 C8 12 9 3 7 -4 C6 -9 3 -12 0 -12 C-3 -12 -6 -9 -7 -4 Z"/>
+      <path d="M-6 -10 C-14 -14 -24 -13 -30 -18 C-26 -10 -20 -6 -13 -6 C-15 -3 -19 -2 -23 -3 C-18 3 -10 2 -6 -3 Z"/>
+      <path d="M6 -10 C14 -14 24 -13 30 -18 C26 -10 20 -6 13 -6 C15 -3 19 -2 23 -3 C18 3 10 2 6 -3 Z"/>
+      <path d="M-6 -8 L-9 -13 L-5 -11 Z"/>
+      <path d="M6 -8 L9 -13 L5 -11 Z"/>
     </g>
   </g>
   <text x="105" y="200" font-family="'Oswald', sans-serif" font-weight="500" font-size="11" fill="#EDE6D3" text-anchor="middle" letter-spacing="1">EST. 1965</text>
-  <!-- panels 2 + 3: repeated wordmark block, mimicking a real brochure's twin panels -->
+  <!-- panel 2: wordmark (shown once, not repeated) -->
   <g transform="translate(215,50)">
     <text x="0" y="46" font-family="'Alex Brush', cursive" font-size="52" fill="#EDE6D3">ski</text>
     <text x="0" y="70" font-family="'Oswald', sans-serif" font-weight="700" font-size="20" fill="#EDE6D3" letter-spacing="0.5">JACKSON HOLE</text>
     <text x="0" y="88" font-family="'Oswald', sans-serif" font-weight="500" font-size="11" fill="#EDE6D3" letter-spacing="1.5">TETON VILLAGE, WYOMING</text>
     <text x="0" y="106" font-family="'Alex Brush', cursive" font-size="18" fill="#EDE6D3">from November to April</text>
   </g>
-  <g transform="translate(425,50)">
-    <text x="0" y="46" font-family="'Alex Brush', cursive" font-size="52" fill="#EDE6D3">ski</text>
-    <text x="0" y="70" font-family="'Oswald', sans-serif" font-weight="700" font-size="20" fill="#EDE6D3" letter-spacing="0.5">JACKSON HOLE</text>
-    <text x="0" y="88" font-family="'Oswald', sans-serif" font-weight="500" font-size="11" fill="#EDE6D3" letter-spacing="1.5">TETON VILLAGE, WYOMING</text>
-    <text x="0" y="106" font-family="'Alex Brush', cursive" font-size="18" fill="#EDE6D3">from November to April</text>
+  <!-- panel 3: trail difficulty legend instead of repeating panel 2 -->
+  <g transform="translate(455,48)">
+    <text x="0" y="0" font-family="'Oswald', sans-serif" font-weight="700" font-size="13" fill="#EDE6D3" letter-spacing="1">TRAIL GUIDE</text>
+    <circle cx="6" cy="20" r="6" fill="none" stroke="#7FA872" stroke-width="2.5"/>
+    <text x="20" y="24" font-family="'Oswald', sans-serif" font-size="10.5" fill="#EDE6D3">EASIEST</text>
+    <rect x="0" y="36" width="12" height="12" fill="none" stroke="#4E7FB5" stroke-width="2.5"/>
+    <text x="20" y="46" font-family="'Oswald', sans-serif" font-size="10.5" fill="#EDE6D3">MORE DIFFICULT</text>
+    <path d="M6 58 L12 66 L6 74 L0 66 Z" fill="none" stroke="#EDE6D3" stroke-width="2.5"/>
+    <text x="20" y="70" font-family="'Oswald', sans-serif" font-size="10.5" fill="#EDE6D3">MOST DIFFICULT</text>
   </g>
   <!-- fold creases dividing the 3 panels -->
   <rect x="200" y="0" width="20" height="460" fill="url(#jhCrease)"/>
@@ -1429,9 +1446,8 @@ const JACKSON_HOLE_MAP_SVG = `<svg viewBox="0 0 630 460" width="630" height="460
     <text x="10" y="56" font-family="'Oswald', sans-serif" font-size="9.5" fill="#2C4A63">VERTICAL DROP: 4,139 FT</text>
     <text x="10" y="68" font-family="'Oswald', sans-serif" font-size="9.5" fill="#2C4A63">13 LIFTS · 131 TRAILS</text>
   </g>
-  <!-- aged vignette + border on top -->
+  <!-- aged vignette on top -->
   <rect width="630" height="460" fill="url(#jhVignette)"/>
-  <rect x="4" y="4" width="622" height="452" fill="none" stroke="#EDE6D3" stroke-width="2" opacity="0.85"/>
 </svg>`;
 
 // The plain flat dot the small Everything-board calendar has always used — untouched.
