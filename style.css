@@ -539,6 +539,7 @@ canvas#band{display:block;width:100%;height:32px;margin-top:16px;border-radius:2
 .pushpin.butter{background:radial-gradient(circle at 35% 32%, #E8C97A, var(--butter) 62%);}
 .pushpin.sage{background:radial-gradient(circle at 35% 32%, #A9C393, var(--sage) 62%);}
 .pushpin.lilac{background:radial-gradient(circle at 35% 32%, #C6ABE0, var(--lilac) 62%);}
+.pushpin.cyan{background:radial-gradient(circle at 35% 32%, #8FCBD3, var(--cyan) 62%);}
 .bulletin-sheet{
   position:relative;z-index:3;background:#FFFDF6;border:1px solid #E4E0D4;border-radius:2px;
   padding:22px 26px 26px;box-shadow:0 6px 16px rgba(40,35,28,.32);transform:rotate(-.6deg);
@@ -558,9 +559,14 @@ canvas#band{display:block;width:100%;height:32px;margin-top:16px;border-radius:2
 }
 .bulletin-photo.placeholder{border:2px dashed #C9BFA8;background:rgba(255,253,246,.6);box-shadow:none;}
 .bulletin-photo.placeholder span{font-size:10.5px;color:#8B6A46;text-align:center;font-family:'Courier Prime',monospace;letter-spacing:.02em;}
+/* A real pinned image (the hand-made Jackson Hole map, for now) — no dashed placeholder border,
+   the SVG fills the whole postcard. */
+.bulletin-photo.map-postcard{padding:0;overflow:hidden;width:140px;height:182px;}
+.bulletin-photo.map-postcard svg{width:100%;height:100%;display:block;}
 /* Two tucked behind the calendar sheet's corners, one draped on top of it — genuine clutter
    instead of a tidy row underneath. */
 .bulletin-photo.corner-tl{top:26px;left:4%;transform:rotate(-7deg);z-index:1;}
+.bulletin-photo.corner-tr{top:22px;right:5%;transform:rotate(5deg);z-index:1;}
 .bulletin-photo.corner-br{bottom:30px;right:5%;transform:rotate(6deg);z-index:1;}
 .bulletin-photo.corner-bl{bottom:34px;left:9%;transform:rotate(-4deg);z-index:4;}
 @media(max-width:700px){

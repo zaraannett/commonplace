@@ -1339,6 +1339,64 @@ function pinnedCards() {
   });
 }
 
+// A vintage-travel-poster-style trail map for Jackson Hole Mountain Resort, pinned to the
+// bulletin board — an original illustration (not a copy of any real ski-resort poster), built on
+// real facts about the resort: opened Dec. 28, 1965 (Paul McCollister, Alex Morley, Gordon
+// Graham); Rendezvous Mountain summits at 10,450ft with a 4,139ft vertical drop down to Teton
+// Village; 13 lifts (incl. the Aerial Tram, Teewinot and Thunder) across 131 trails.
+// Sources: jacksonhole.com/history, jacksonhole.com/corbets-couloir, Wikipedia "Jackson Hole
+// Mountain Resort". Inlined (not an <img src>) so its text can use the app's own already-loaded
+// Caveat/Courier Prime fonts instead of needing a font baked into the graphic.
+const JACKSON_HOLE_MAP_SVG = `<svg viewBox="0 0 400 520" xmlns="http://www.w3.org/2000/svg">
+  <rect width="400" height="520" fill="#1B4B7A"/>
+  <rect x="10" y="10" width="380" height="500" fill="none" stroke="#F4EFE1" stroke-width="1.5" stroke-dasharray="4 4" opacity="0.6"/>
+  <g transform="translate(70,78)">
+    <circle r="52" fill="#F4EFE1"/>
+    <circle r="46" fill="none" stroke="#1B4B7A" stroke-width="2"/>
+    <path id="jhArcTop" d="M -38 -8 A 40 40 0 0 1 38 -8" fill="none"/>
+    <path id="jhArcBot" d="M -32 20 A 34 34 0 0 0 32 20" fill="none"/>
+    <text font-family="'Courier Prime', monospace" font-weight="700" font-size="9.5" fill="#1B4B7A" letter-spacing="1.5"><textPath href="#jhArcTop" startOffset="50%" text-anchor="middle">JACKSON HOLE</textPath></text>
+    <text font-family="'Courier Prime', monospace" font-weight="700" font-size="8" fill="#1B4B7A" letter-spacing="2"><textPath href="#jhArcBot" startOffset="50%" text-anchor="middle">WYOMING</textPath></text>
+    <g transform="translate(-13,-6) scale(0.9)" fill="#1B4B7A">
+      <path d="M0 20 L0 8 C0 2 4 -2 9 -2 C10 -6 13 -9 16 -10 C15 -8 15 -6 16 -5 C19 -7 23 -7 25 -5 C22 -4 20 -2 20 0 C24 -1 27 1 27 4 C24 3 21 4 20 6 L20 20 L16 20 L16 10 L12 10 L12 20 L8 20 L8 12 C6 12 4 11 3 9 L3 20 Z"/>
+    </g>
+  </g>
+  <text x="205" y="60" font-family="'Caveat', cursive" font-weight="700" font-size="54" fill="#F4EFE1">ski</text>
+  <text x="207" y="90" font-family="'Courier Prime', monospace" font-weight="700" font-size="17" fill="#F4EFE1" letter-spacing="1">JACKSON HOLE</text>
+  <text x="207" y="106" font-family="'Courier Prime', monospace" font-size="10" fill="#F4EFE1" letter-spacing="1.5">TETON VILLAGE, WYOMING</text>
+  <text x="207" y="124" font-family="'Caveat', cursive" font-weight="600" font-size="15" fill="#F4EFE1">from November to April</text>
+  <g>
+    <path d="M20 340 L95 210 L150 300 L170 340 Z" fill="#AFC2CE"/>
+    <path d="M120 340 L235 155 L270 210 L300 175 L380 340 Z" fill="#D8DEDF"/>
+    <path d="M235 155 L270 210 L240 240 Z" fill="#AFC2CE"/>
+    <path d="M300 175 L380 340 L330 340 L310 260 Z" fill="#AFC2CE"/>
+    <path d="M225 172 L235 155 L246 175 L235 185 Z" fill="#F4EFE1"/>
+    <path d="M0 340 L10 332 L18 340 L26 330 L34 340 L42 333 L50 340 L58 331 L66 340 L74 334 L82 340 L90 329 L98 340 L106 333 L114 340 L122 331 L130 340 L138 334 L146 340 L154 330 L162 340 L170 333 L178 340 L186 331 L194 340 L202 334 L210 340 L218 330 L226 340 L234 333 L242 340 L250 331 L258 340 L266 334 L274 340 L282 330 L290 340 L298 333 L306 340 L314 331 L322 340 L330 334 L338 340 L346 330 L354 340 L362 333 L370 340 L378 331 L386 340 L394 334 L400 340 L400 360 L0 360 Z" fill="#12324f"/>
+  </g>
+  <g stroke-width="2" fill="none" stroke-linecap="round">
+    <path d="M235 158 L150 300" stroke="#E4B84A"/>
+    <path d="M235 158 L190 320" stroke="#C0567A"/>
+    <path d="M270 213 L230 320" stroke="#7FA872"/>
+    <path d="M300 178 L280 320" stroke="#E4B84A"/>
+    <path d="M300 178 L320 330" stroke="#C0567A"/>
+  </g>
+  <g font-family="'Courier Prime', monospace" font-size="8.5" fill="#F4EFE1">
+    <circle cx="235" cy="158" r="4" fill="#F4EFE1"/><text x="242" y="152">TRAM</text>
+    <circle cx="270" cy="213" r="4" fill="#F4EFE1"/><text x="277" y="210">TEEWINOT</text>
+    <circle cx="300" cy="178" r="4" fill="#F4EFE1"/><text x="307" y="175">THUNDER</text>
+  </g>
+  <g transform="translate(30,388)">
+    <rect width="340" height="100" fill="#F4EFE1" opacity="0.95"/>
+    <text x="14" y="22" font-family="'Courier Prime', monospace" font-weight="700" font-size="12" fill="#1B4B7A" letter-spacing="1">JACKSON HOLE MOUNTAIN RESORT</text>
+    <text x="14" y="40" font-family="'Courier Prime', monospace" font-size="9.5" fill="#1B4B7A">EST. 1965 · TETON VILLAGE, WY</text>
+    <line x1="14" y1="50" x2="326" y2="50" stroke="#1B4B7A" stroke-width="0.75" opacity="0.4"/>
+    <text x="14" y="68" font-family="'Courier Prime', monospace" font-size="9.5" fill="#1B4B7A">SUMMIT: 10,450 FT</text>
+    <text x="14" y="82" font-family="'Courier Prime', monospace" font-size="9.5" fill="#1B4B7A">VERTICAL DROP: 4,139 FT</text>
+    <text x="180" y="68" font-family="'Courier Prime', monospace" font-size="9.5" fill="#1B4B7A">13 LIFTS</text>
+    <text x="180" y="82" font-family="'Courier Prime', monospace" font-size="9.5" fill="#1B4B7A">131 TRAILS</text>
+  </g>
+</svg>`;
+
 // The plain flat dot the small Everything-board calendar has always used — untouched.
 function calendarDotHtml(color) {
   return `<div class="dot ${color}"></div>`;
@@ -1409,7 +1467,8 @@ function calendarCard(large) {
     `<div class="meta"><span>${monthName}</span></div>` +
     table +
     `</div>` +
-    `<div class="bulletin-photo placeholder corner-bl"><div class="pushpin lilac"></div><span>photos coming soon</span></div>`;
+    `<div class="bulletin-photo placeholder corner-bl"><div class="pushpin lilac"></div><span>photos coming soon</span></div>` +
+    `<div class="bulletin-photo map-postcard corner-tr"><div class="pushpin cyan"></div>${JACKSON_HOLE_MAP_SVG}</div>`;
   return card;
 }
 
