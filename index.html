@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#F7F3EB">
 <title>Commonplace</title>
 <link rel="manifest" href="manifest.json">
@@ -47,6 +47,11 @@
   </div>
 
   <nav id="nav" class="tabrow"></nav>
+  <!-- Mobile only (see the max-width:700px block in style.css) — a collapsed trigger that
+       expands the same #nav list upward as a tappable menu, instead of a scrolling bottom bar. -->
+  <button type="button" id="navMenuToggle" class="nav-menu-toggle" aria-expanded="false" aria-controls="nav">
+    <span id="navMenuLabel">Everything</span><span class="chev" aria-hidden="true">▾</span>
+  </button>
 
   <!-- ═══ BOARD ═══ -->
   <main class="view on" id="v-board">

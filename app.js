@@ -1523,6 +1523,10 @@ function switchView(view) {
   document.getElementById("v-" + view).classList.add("on");
 }
 
+// Mobile shows #nav as a collapsed-by-default expanding menu (see navMenuOpen/wireNavMenuToggle)
+// instead of the desktop scrolling tab strip — this flag just remembers whether it's open across
+// the re-renders that rebuild #nav's contents from scratch (a tab click closes it explicitly).
+let navMenuOpen = false;
 function renderNav() {
   const nav = document.getElementById("nav");
   nav.innerHTML = "";
@@ -1543,6 +1547,7 @@ function renderNav() {
       activeNavId = t.id;
       activeTag = t.tag || null;
       switchView(t.view);
+      navMenuOpen = false;
       render();
     });
     nav.appendChild(a);
@@ -1559,6 +1564,13 @@ function renderNav() {
       removeCustomView(x.dataset.closeid);
     });
   });
+
+  const current = ordered.find((t) => t.id === activeNavId);
+  const toggle = document.getElementById("navMenuToggle");
+  document.getElementById("navMenuLabel").textContent = current ? current.label : "Menu";
+  nav.classList.toggle("open", navMenuOpen);
+  toggle.classList.toggle("open", navMenuOpen);
+  toggle.setAttribute("aria-expanded", String(navMenuOpen));
 }
 
 function addCustomView() {
@@ -1653,6 +1665,16 @@ document.getElementById("loginForm").addEventListener("submit", async (ev) => {
   if (error) errEl.textContent = error.message;
 });
 document.getElementById("signoutBtn").addEventListener("click", () => db.auth.signOut());
+// Just flips a class + the remembered flag — no render() needed, so opening the mobile nav
+// menu is instant and doesn't touch anything else on the board.
+document.getElementById("navMenuToggle").addEventListener("click", () => {
+  navMenuOpen = !navMenuOpen;
+  const nav = document.getElementById("nav");
+  const toggle = document.getElementById("navMenuToggle");
+  nav.classList.toggle("open", navMenuOpen);
+  toggle.classList.toggle("open", navMenuOpen);
+  toggle.setAttribute("aria-expanded", String(navMenuOpen));
+});
 
 // ── boot ─────────────────────────────────────────────────────────────
 drawBand();
