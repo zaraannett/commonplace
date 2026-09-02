@@ -457,6 +457,7 @@ const MOODS = [
   { id: "steady", label: "Steady", color: "sage" },
   { id: "soft", label: "Soft", color: "cyan" },
   { id: "cozy", label: "Cozy", color: "lilac" },
+  { id: "sleepy", label: "Sleepy", color: "peri" },
   { id: "foggy", label: "Foggy", color: "grey" },
   { id: "flat", label: "Flat", color: "peri" },
   { id: "heavy", label: "Heavy", color: "grey" },
@@ -471,6 +472,7 @@ const MOOD_ICON_PATHS = {
   steady: `<path d="M10 46 L26 18 L34 32 L42 14 L56 46 Z" />`,
   soft: `<path d="M14 38 C10 28 20 20 28 24 C32 14 46 16 48 26 C58 26 58 40 48 40 C46 46 34 48 30 42 C22 46 12 44 14 38 Z" />`,
   cozy: `<path d="M16 28 L16 46 C16 52 40 52 40 46 L40 28 Z" /><path d="M40 32 C48 32 48 42 40 42" /><path d="M22 22 C20 16 26 16 24 10" />`,
+  sleepy: `<path d="M42 12 C30 12 21 22 21 34 C21 46 30 54 40 54 C33 49 28 42 28 33 C28 23 34 15 42 12 Z" /><path d="M46 16 L55 16 L46 25 L55 25" />`,
   foggy: `<path d="M8 22 Q16 16 24 22 T40 22 T56 22" /><path d="M12 34 Q20 28 28 34 T44 34 T58 34" /><path d="M8 46 Q16 40 24 46 T40 46 T56 46" />`,
   flat: `<path d="M12 32 Q22 30 32 32 T52 33" />`,
   heavy: `<path d="M10 20 Q32 26 54 20" /><path d="M32 26 L32 40" /><circle cx="32" cy="46" r="6" />`,
@@ -487,6 +489,7 @@ function todayMoodEntry() {
   return entries.find((e) => e.type === "mood" && (e.createdAt || "").slice(0, 10) === today);
 }
 let moodPickerOpen = false;
+let moodMonthOpen = false;
 function setTodayMood(id) {
   const existing = todayMoodEntry();
   if (existing) {
@@ -512,6 +515,58 @@ function moodHistoryStrip() {
   }
   return `<div class="mood-history">${cells.join("")}</div>`;
 }
+// Same day-grid math as calendarCard() (current month only, no prev/next yet — matches that
+// card's existing limits), but each day's dot is colored by that day's mood instead of a due date,
+// plus a frequency breakdown underneath so a month of check-ins reads as actual data, not just a
+// week of dots.
+function moodMonthGrid() {
+  const now = new Date();
+  const y = now.getFullYear(), m = now.getMonth();
+  const first = new Date(y, m, 1);
+  const startDow = (first.getDay() + 6) % 7;
+  const daysInMonth = new Date(y, m + 1, 0).getDate();
+  const monthName = now.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+
+  const byDay = {};
+  entries.forEach((e) => {
+    if (e.type !== "mood") return;
+    const mood = MOODS.find((mm) => mm.id === e.title);
+    if (mood) byDay[(e.createdAt || "").slice(0, 10)] = mood;
+  });
+
+  let cells = [];
+  for (let i = 0; i < startDow; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) {
+    const iso = new Date(y, m, d).toISOString().slice(0, 10);
+    cells.push({ d, mood: byDay[iso] });
+  }
+  while (cells.length % 7 !== 0) cells.push(null);
+  let rows = "";
+  for (let i = 0; i < cells.length; i += 7) {
+    rows += "<tr>" + cells.slice(i, i + 7).map((c) =>
+      c ? `<td>${c.d}${c.mood ? `<div class="dot ${c.mood.color}" title="${c.mood.label}"></div>` : ""}</td>` : "<td></td>"
+    ).join("") + "</tr>";
+  }
+
+  const counts = {};
+  Object.values(byDay).forEach((mood) => { counts[mood.id] = (counts[mood.id] || 0) + 1; });
+  const freq = MOODS.map((m) => ({ ...m, count: counts[m.id] || 0 })).filter((m) => m.count > 0).sort((a, b) => b.count - a.count);
+  const maxCount = freq.length ? freq[0].count : 1;
+  const freqHtml = freq.length
+    ? `<div class="mood-freq">${freq.map((m) =>
+        `<div class="mood-freq-row"><span class="mood-freq-icon ${m.color}">${moodIconSvg(m.id)}</span>` +
+        `<span class="mood-freq-label">${m.label}</span>` +
+        `<span class="mood-freq-bar-wrap"><span class="mood-freq-bar ${m.color}" style="width:${Math.round((m.count / maxCount) * 100)}%"></span></span>` +
+        `<span class="mood-freq-count">${m.count}</span></div>`
+      ).join("")}</div>`
+    : `<p class="mood-freq-empty">No check-ins yet this month.</p>`;
+
+  return `<div class="mood-month">` +
+    `<div class="mood-month-head">${monthName}</div>` +
+    `<table class="cal"><tr><th>M</th><th>T</th><th>W</th><th>T</th><th>F</th><th>S</th><th>S</th></tr>${rows}</table>` +
+    freqHtml +
+    `</div>`;
+}
 function moodCard() {
   const card = makeCard("mood-card widget wide");
   const todayEntry = todayMoodEntry();
@@ -535,7 +590,9 @@ function moodCard() {
   card.innerHTML =
     `<div class="meta"><span>Today's vibe</span><span class="tags"><span class="mood-date">${dateStr}</span></span></div>` +
     body +
-    moodHistoryStrip();
+    moodHistoryStrip() +
+    `<button type="button" class="sketch-btn mood-toggle-month" data-mood-toggle-month>${moodMonthOpen ? "hide month" : "view month ↓"}</button>` +
+    (moodMonthOpen ? moodMonthGrid() : "");
   card.querySelectorAll("[data-mood-pick]").forEach((btn) => btn.addEventListener("click", (ev) => {
     ev.stopPropagation();
     setTodayMood(btn.dataset.moodPick);
@@ -543,6 +600,11 @@ function moodCard() {
   card.querySelectorAll("[data-mood-change]").forEach((el) => el.addEventListener("click", (ev) => {
     ev.stopPropagation();
     moodPickerOpen = true;
+    render();
+  }));
+  card.querySelectorAll("[data-mood-toggle-month]").forEach((el) => el.addEventListener("click", (ev) => {
+    ev.stopPropagation();
+    moodMonthOpen = !moodMonthOpen;
     render();
   }));
   return card;
