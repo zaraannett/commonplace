@@ -1348,7 +1348,7 @@ function pinnedCards() {
 // Aerial Tram, Teewinot and Thunder) across 131 trails.
 // Sources: jacksonhole.com/history, jacksonhole.com/corbets-couloir, Wikipedia "Jackson Hole
 // Mountain Resort". Inlined (not an <img src>) so its text uses the app's own already-loaded
-// Oswald/Alex Brush fonts instead of needing fonts baked into the graphic.
+// Poppins/Yellowtail fonts instead of needing fonts baked into the graphic.
 const JACKSON_HOLE_MAP_SVG = `<svg viewBox="0 0 630 460" width="630" height="460" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
   <defs>
     <filter id="jhPaper" x="-5%" y="-5%" width="110%" height="110%">
@@ -1384,8 +1384,8 @@ const JACKSON_HOLE_MAP_SVG = `<svg viewBox="0 0 630 460" width="630" height="460
     <circle r="52" fill="none" stroke="#2C4A63" stroke-width="2"/>
     <path id="jhArcTop" d="M -42 -10 A 44 44 0 0 1 42 -10" fill="none"/>
     <path id="jhArcBot" d="M -36 22 A 38 38 0 0 0 36 22" fill="none"/>
-    <text font-family="'Oswald', sans-serif" font-weight="700" font-size="10.5" fill="#2C4A63" letter-spacing="2"><textPath href="#jhArcTop" xlink:href="#jhArcTop" startOffset="50%" text-anchor="middle">JACKSON HOLE</textPath></text>
-    <text font-family="'Oswald', sans-serif" font-weight="500" font-size="9" fill="#2C4A63" letter-spacing="3"><textPath href="#jhArcBot" xlink:href="#jhArcBot" startOffset="50%" text-anchor="middle">WYOMING</textPath></text>
+    <text font-family="'Poppins', sans-serif" font-weight="700" font-size="10.5" fill="#2C4A63" letter-spacing="2"><textPath href="#jhArcTop" xlink:href="#jhArcTop" startOffset="50%" text-anchor="middle">JACKSON HOLE</textPath></text>
+    <text font-family="'Poppins', sans-serif" font-weight="500" font-size="9" fill="#2C4A63" letter-spacing="3"><textPath href="#jhArcBot" xlink:href="#jhArcBot" startOffset="50%" text-anchor="middle">WYOMING</textPath></text>
     <!-- moose head, front-facing -->
     <g transform="translate(0,-4)" fill="#2C4A63">
       <path d="M-7 -4 C-9 3 -8 12 -4 19 C-2 22 2 22 4 19 C8 12 9 3 7 -4 C6 -9 3 -12 0 -12 C-3 -12 -6 -9 -7 -4 Z"/>
@@ -1395,23 +1395,23 @@ const JACKSON_HOLE_MAP_SVG = `<svg viewBox="0 0 630 460" width="630" height="460
       <path d="M6 -8 L9 -13 L5 -11 Z"/>
     </g>
   </g>
-  <text x="105" y="200" font-family="'Oswald', sans-serif" font-weight="500" font-size="11" fill="#EDE6D3" text-anchor="middle" letter-spacing="1">EST. 1965</text>
+  <text x="105" y="200" font-family="'Poppins', sans-serif" font-weight="500" font-size="11" fill="#EDE6D3" text-anchor="middle" letter-spacing="1">EST. 1965</text>
   <!-- panel 2: wordmark (shown once, not repeated) -->
   <g transform="translate(215,50)">
-    <text x="0" y="46" font-family="'Alex Brush', cursive" font-size="52" fill="#EDE6D3">ski</text>
-    <text x="0" y="70" font-family="'Oswald', sans-serif" font-weight="700" font-size="20" fill="#EDE6D3" letter-spacing="0.5">JACKSON HOLE</text>
-    <text x="0" y="88" font-family="'Oswald', sans-serif" font-weight="500" font-size="11" fill="#EDE6D3" letter-spacing="1.5">TETON VILLAGE, WYOMING</text>
-    <text x="0" y="106" font-family="'Alex Brush', cursive" font-size="18" fill="#EDE6D3">from November to April</text>
+    <text x="0" y="46" font-family="'Yellowtail', cursive" font-size="52" fill="#EDE6D3">ski</text>
+    <text x="0" y="70" font-family="'Poppins', sans-serif" font-weight="700" font-size="20" fill="#EDE6D3" letter-spacing="0.5">JACKSON HOLE</text>
+    <text x="0" y="88" font-family="'Poppins', sans-serif" font-weight="500" font-size="11" fill="#EDE6D3" letter-spacing="1.5">TETON VILLAGE, WYOMING</text>
+    <text x="0" y="106" font-family="'Yellowtail', cursive" font-size="18" fill="#EDE6D3">from November to April</text>
   </g>
   <!-- panel 3: trail difficulty legend instead of repeating panel 2 -->
   <g transform="translate(455,48)">
-    <text x="0" y="0" font-family="'Oswald', sans-serif" font-weight="700" font-size="13" fill="#EDE6D3" letter-spacing="1">TRAIL GUIDE</text>
+    <text x="0" y="0" font-family="'Poppins', sans-serif" font-weight="700" font-size="13" fill="#EDE6D3" letter-spacing="1">TRAIL GUIDE</text>
     <circle cx="6" cy="20" r="6" fill="none" stroke="#7FA872" stroke-width="2.5"/>
-    <text x="20" y="24" font-family="'Oswald', sans-serif" font-size="10.5" fill="#EDE6D3">EASIEST</text>
+    <text x="20" y="24" font-family="'Poppins', sans-serif" font-size="10.5" fill="#EDE6D3">EASIEST</text>
     <rect x="0" y="36" width="12" height="12" fill="none" stroke="#4E7FB5" stroke-width="2.5"/>
-    <text x="20" y="46" font-family="'Oswald', sans-serif" font-size="10.5" fill="#EDE6D3">MORE DIFFICULT</text>
+    <text x="20" y="46" font-family="'Poppins', sans-serif" font-size="10.5" fill="#EDE6D3">MORE DIFFICULT</text>
     <path d="M6 58 L12 66 L6 74 L0 66 Z" fill="none" stroke="#EDE6D3" stroke-width="2.5"/>
-    <text x="20" y="70" font-family="'Oswald', sans-serif" font-size="10.5" fill="#EDE6D3">MOST DIFFICULT</text>
+    <text x="20" y="70" font-family="'Poppins', sans-serif" font-size="10.5" fill="#EDE6D3">MOST DIFFICULT</text>
   </g>
   <!-- fold creases dividing the 3 panels -->
   <rect x="200" y="0" width="20" height="460" fill="url(#jhCrease)"/>
@@ -1432,7 +1432,7 @@ const JACKSON_HOLE_MAP_SVG = `<svg viewBox="0 0 630 460" width="630" height="460
     <path d="M440 218 L410 425" stroke="#D9A441"/>
     <path d="M440 218 L470 430" stroke="#B5502F"/>
   </g>
-  <g font-family="'Oswald', sans-serif" font-weight="500" font-size="10" fill="#EDE6D3">
+  <g font-family="'Poppins', sans-serif" font-weight="500" font-size="10" fill="#EDE6D3">
     <circle cx="340" cy="193" r="4.5" fill="#EDE6D3"/><text x="348" y="188">TRAM</text>
     <circle cx="390" cy="268" r="4.5" fill="#EDE6D3"/><text x="398" y="265">TEEWINOT</text>
     <circle cx="440" cy="218" r="4.5" fill="#EDE6D3"/><text x="448" y="214">THUNDER</text>
@@ -1440,11 +1440,11 @@ const JACKSON_HOLE_MAP_SVG = `<svg viewBox="0 0 630 460" width="630" height="460
   <!-- stats box -->
   <g transform="translate(430,370)">
     <rect width="180" height="72" fill="#EDE6D3" opacity="0.95"/>
-    <text x="10" y="18" font-family="'Oswald', sans-serif" font-weight="700" font-size="10" fill="#2C4A63" letter-spacing="0.5">JACKSON HOLE MTN RESORT</text>
+    <text x="10" y="18" font-family="'Poppins', sans-serif" font-weight="700" font-size="10" fill="#2C4A63" letter-spacing="0.5">JACKSON HOLE MTN RESORT</text>
     <line x1="10" y1="26" x2="170" y2="26" stroke="#2C4A63" stroke-width="0.6" opacity="0.4"/>
-    <text x="10" y="42" font-family="'Oswald', sans-serif" font-size="9.5" fill="#2C4A63">SUMMIT: 10,450 FT</text>
-    <text x="10" y="56" font-family="'Oswald', sans-serif" font-size="9.5" fill="#2C4A63">VERTICAL DROP: 4,139 FT</text>
-    <text x="10" y="68" font-family="'Oswald', sans-serif" font-size="9.5" fill="#2C4A63">13 LIFTS · 131 TRAILS</text>
+    <text x="10" y="42" font-family="'Poppins', sans-serif" font-size="9.5" fill="#2C4A63">SUMMIT: 10,450 FT</text>
+    <text x="10" y="56" font-family="'Poppins', sans-serif" font-size="9.5" fill="#2C4A63">VERTICAL DROP: 4,139 FT</text>
+    <text x="10" y="68" font-family="'Poppins', sans-serif" font-size="9.5" fill="#2C4A63">13 LIFTS · 131 TRAILS</text>
   </g>
   <!-- aged vignette on top -->
   <rect width="630" height="460" fill="url(#jhVignette)"/>
