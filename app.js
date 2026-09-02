@@ -1488,14 +1488,21 @@ function wireAddRow(container, ctx) {
     input.placeholder = "type and press enter…";
     addBtn.replaceWith(input);
     input.focus();
+    // render() below detaches `input` from the document (the whole card gets rebuilt), and
+    // detaching a focused element fires a native blur — which would otherwise re-trigger the
+    // "blur" listener a second time and add the entry twice. `committed` makes commit() (and
+    // the Escape cancel) run at most once per input.
+    let committed = false;
     const commit = () => {
+      if (committed) return;
+      committed = true;
       const val = input.value.trim();
       if (val) addEntry(Object.assign({ body: val }, ctx));
       render();
     };
     input.addEventListener("keydown", (ev) => {
       if (ev.key === "Enter") commit();
-      if (ev.key === "Escape") render();
+      if (ev.key === "Escape") { committed = true; render(); }
     });
     input.addEventListener("blur", commit);
   });
