@@ -522,42 +522,53 @@ canvas#band{display:block;width:100%;height:32px;margin-top:16px;border-radius:2
 .cal-sticker.lilac path{fill:var(--lilac);} .cal-sticker.cyan path{fill:var(--cyan);}
 
 /* ── the Month tab's big calendar — a corkboard "bulletin board" with the month pinned to it
-   like a sheet of paper, handwritten day numbers, and a row of placeholder slots reserved for
-   the Pinterest photos/quotes coming later. ── */
+   like a sheet of paper, handwritten day numbers, and a few placeholder slots reserved for the
+   Pinterest photos/quotes coming later, overlapping the calendar corners the way a real board
+   gets cluttered rather than sitting in a tidy separate row. ── */
 .card.bulletin-board{
-  grid-column:1 / -1;background-color:#C8A876;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='c'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='linear' slope='0.15'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23c)'/%3E%3C/svg%3E");
-  border:10px solid #8B6A46;border-radius:4px;padding:34px;transform:none !important;
+  grid-column:1 / -1;position:relative;min-height:540px;
+  background-color:#B98F5E;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='90'%3E%3Cfilter id='c'%3E%3CfeTurbulence type='turbulence' baseFrequency='0.75' numOctaves='2' seed='7'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='discrete' tableValues='0 .05 .35 .1 .5 .15 .4'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='90' height='90' filter='url(%23c)'/%3E%3C/svg%3E");
+  border:10px solid #8B6A46;border-radius:4px;padding:40px 20px;transform:none !important;
 }
 .pushpin{
   position:absolute;top:-9px;left:50%;transform:translateX(-50%);
-  width:15px;height:15px;border-radius:50%;z-index:3;box-shadow:0 2px 4px rgba(40,35,28,.35);
+  width:15px;height:15px;border-radius:50%;z-index:5;box-shadow:0 2px 4px rgba(40,35,28,.35);
 }
 .pushpin.rose{background:radial-gradient(circle at 35% 32%, #E29AAB, var(--rose) 62%);}
 .pushpin.butter{background:radial-gradient(circle at 35% 32%, #E8C97A, var(--butter) 62%);}
 .pushpin.sage{background:radial-gradient(circle at 35% 32%, #A9C393, var(--sage) 62%);}
+.pushpin.lilac{background:radial-gradient(circle at 35% 32%, #C6ABE0, var(--lilac) 62%);}
 .bulletin-sheet{
-  position:relative;background:#FFFDF6;border:1px solid #E4E0D4;border-radius:2px;
-  padding:22px 26px 26px;box-shadow:0 5px 14px rgba(40,35,28,.28);transform:rotate(-.6deg);
+  position:relative;z-index:3;background:#FFFDF6;border:1px solid #E4E0D4;border-radius:2px;
+  padding:22px 26px 26px;box-shadow:0 6px 16px rgba(40,35,28,.32);transform:rotate(-.6deg);
+  width:360px;max-width:90%;margin:0 auto;
 }
-.bulletin-sheet .meta{margin-bottom:10px;}
+.bulletin-sheet .meta{margin-bottom:10px;justify-content:center;}
 .bulletin-sheet .meta span:first-child{font-family:'Newsreader',serif;font-style:italic;font-size:26px;}
 .bulletin-sheet .cal{margin-top:8px;}
 .bulletin-sheet .cal th{font-size:12px;padding-bottom:12px;}
 .bulletin-sheet .cal td{font-family:'Klee One',cursive;font-size:18px;padding:15px 0;}
 .bulletin-sheet .cal-sticker{width:20px;height:20px;bottom:3px;}
 
-.bulletin-photos{display:flex;gap:22px;margin-top:30px;flex-wrap:wrap;justify-content:center;}
 .bulletin-photo{
-  position:relative;width:128px;height:150px;background:#FFFDF6;
+  position:absolute;width:120px;height:140px;background:#FFFDF6;
   border:1px solid #E4E0D4;box-shadow:0 4px 10px rgba(40,35,28,.22);
   display:flex;align-items:center;justify-content:center;padding:10px;
 }
-.bulletin-photo:nth-child(1){transform:rotate(-3deg);}
-.bulletin-photo:nth-child(2){transform:rotate(2deg);}
-.bulletin-photo:nth-child(3){transform:rotate(-1.5deg);}
-.bulletin-photo.placeholder{border:2px dashed #C9BFA8;background:rgba(255,253,246,.5);box-shadow:none;}
+.bulletin-photo.placeholder{border:2px dashed #C9BFA8;background:rgba(255,253,246,.6);box-shadow:none;}
 .bulletin-photo.placeholder span{font-size:10.5px;color:#8B6A46;text-align:center;font-family:'Courier Prime',monospace;letter-spacing:.02em;}
+/* Two tucked behind the calendar sheet's corners, one draped on top of it — genuine clutter
+   instead of a tidy row underneath. */
+.bulletin-photo.corner-tl{top:26px;left:4%;transform:rotate(-7deg);z-index:1;}
+.bulletin-photo.corner-br{bottom:30px;right:5%;transform:rotate(6deg);z-index:1;}
+.bulletin-photo.corner-bl{bottom:34px;left:9%;transform:rotate(-4deg);z-index:4;}
+@media(max-width:700px){
+  /* Absolute corner placement gets cramped on a narrow screen — fall back to a plain stacked
+     row below the calendar instead of overlapping clutter. */
+  .card.bulletin-board{min-height:0;}
+  .bulletin-photo{position:static;transform:none !important;margin:14px auto 0;}
+}
 
 /* ── DAY / WEEK stub views ── */
 .day{max-width:600px;margin:30px auto 0;}

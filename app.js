@@ -1397,19 +1397,19 @@ function calendarCard(large) {
     return card;
   }
 
-  // Big Month-tab view — a corkboard bulletin board with the calendar pinned to it like a sheet
-  // of paper, plus a row of placeholder slots reserved for the Pinterest photos/quotes (once
-  // that integration is wired up, these get replaced with the real cached pins).
+  // Big Month-tab view — a corkboard bulletin board with the calendar pinned centered on it like
+  // a sheet of paper, and a few placeholder slots (for the Pinterest photos/quotes, once that
+  // integration lands) overlapping its corners for real clutter instead of a tidy row.
   const card = makeCard("bulletin-board");
   card.innerHTML =
+    `<div class="bulletin-photo placeholder corner-tl"><div class="pushpin butter"></div><span>photos coming soon</span></div>` +
+    `<div class="bulletin-photo placeholder corner-br"><div class="pushpin sage"></div><span>photos coming soon</span></div>` +
     `<div class="bulletin-sheet">` +
     `<div class="pushpin rose"></div>` +
-    `<div class="meta"><span>${monthName}</span><span class="tags"><span class="tag peri">#calendar</span></span></div>` +
+    `<div class="meta"><span>${monthName}</span></div>` +
     table +
     `</div>` +
-    `<div class="bulletin-photos">` +
-    [0, 1, 2].map(() => `<div class="bulletin-photo placeholder"><div class="pushpin butter"></div><span>photos coming soon</span></div>`).join("") +
-    `</div>`;
+    `<div class="bulletin-photo placeholder corner-bl"><div class="pushpin lilac"></div><span>photos coming soon</span></div>`;
   return card;
 }
 
