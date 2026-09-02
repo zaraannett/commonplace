@@ -8,6 +8,10 @@
 
 const COLOR_ROTATION = ["butter", "sage", "peri", "lilac", "rose", "cyan"];
 const DAY = 86400000;
+// Coarse pointer (touch/pen) vs fine pointer (mouse/trackpad) — not a screen-width breakpoint,
+// since an iPad can be just as wide as a laptop. Used to keep the diary's drawing option off of
+// plain desktop/laptop browsers, where there's no pen to draw with anyway.
+const isTouchCapable = window.matchMedia("(pointer: coarse)").matches || navigator.maxTouchPoints > 0;
 
 // ── date helpers ──────────────────────────────────────────────────────
 function todayStart() {
@@ -831,7 +835,7 @@ function diaryCards() {
     card.innerHTML =
       `<div class="meta"><span>${dateStr}</span><span class="tags">${e.tags.map((t) => tagSpan(t)).join(" ")}` +
       `<span class="boxclose" data-addtag="${e.id}" title="add tag">+</span>` +
-      `<span class="boxclose" data-open-sketch="${e.id}" title="draw">✎</span>` +
+      (isTouchCapable ? `<span class="boxclose" data-open-sketch="${e.id}" title="draw">✎</span>` : "") +
       `<span class="boxclose" data-del="${e.id}" title="delete">✕</span></span></div>` +
       (e.title ? `<h2>${escapeHtml(e.title)}</h2>` : "") +
       body;
@@ -1458,14 +1462,21 @@ function buildBoardCards() {
     noteCards().forEach((c) => list.push({ id: "note-" + c.dataset.entryId, el: c }));
   } else if (activeNavId === "diary") {
     diaryCards().forEach((c) => list.push({ id: "diary-" + c.dataset.entryId, el: c }));
-    const addSketchTile = makeCard("mini addbox");
-    addSketchTile.innerHTML = `<div class="meta"><span>+ new sketch</span></div>`;
-    addSketchTile.addEventListener("click", () => {
-      const e = addEntry({ type: "diary", drawing: { w: 0, h: 0, strokes: [], ...randomDrawingMeta() } });
-      render();
-      openSketchOverlay(e);
-    });
-    list.push({ id: "add-diary-sketch", el: addSketchTile });
+    // Drawing only makes sense where there's a pen/touch to draw with — on a plain mouse-driven
+    // desktop browser, skip straight to typing instead of offering a canvas.
+    const addTile = makeCard("mini addbox");
+    if (isTouchCapable) {
+      addTile.innerHTML = `<div class="meta"><span>+ new sketch</span></div>`;
+      addTile.addEventListener("click", () => {
+        const e = addEntry({ type: "diary", drawing: { w: 0, h: 0, strokes: [], ...randomDrawingMeta() } });
+        render();
+        openSketchOverlay(e);
+      });
+    } else {
+      addTile.innerHTML = `<div class="meta"><span>+ new entry</span></div>`;
+      addTile.addEventListener("click", () => openModal("diary"));
+    }
+    list.push({ id: "add-diary-sketch", el: addTile });
   } else if (activeNavId === "people") {
     const orc = owedReplyCard();
     if (orc) list.push({ id: "owe-reply", el: orc });
@@ -1778,18 +1789,18 @@ const mPin = document.getElementById("mPin");
 const mHabitRow = document.getElementById("mHabitRow");
 const mHabitTarget = document.getElementById("mHabitTarget");
 
-function openModal() {
+function openModal(presetType) {
   backdrop.classList.add("on");
   mBody.value = ""; mTitle.value = ""; mTags.value = ""; mDue.value = ""; mPin.checked = false;
-  mType.value = "note";
-  mHabitRow.style.display = "none";
+  mType.value = presetType || "note";
+  mHabitRow.style.display = mType.value === "habit" ? "flex" : "none";
   mHabitTarget.value = 3;
   mBody.focus();
 }
 function closeModal() {
   backdrop.classList.remove("on");
 }
-document.getElementById("captureBtn").addEventListener("click", openModal);
+document.getElementById("captureBtn").addEventListener("click", () => openModal());
 document.getElementById("mCancel").addEventListener("click", closeModal);
 backdrop.addEventListener("click", (ev) => { if (ev.target === backdrop) closeModal(); });
 mType.addEventListener("change", () => {
