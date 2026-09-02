@@ -1461,7 +1461,10 @@ function rampColor(t) {
 }
 function drawBand() {
   const cv = document.getElementById("band");
-  const cell = 2, w = cv.clientWidth, h = 32;
+  // Height comes from CSS now (32px on desktop, 8px on phone — see the mobile media query),
+  // not a hardcoded value, so the band actually shrinks with the rest of the compact mobile
+  // header instead of the canvas staying full-height while CSS just clips it.
+  const cell = 2, w = cv.clientWidth, h = cv.clientHeight || 32;
   cv.width = w; cv.height = h;
   const ctx = cv.getContext("2d");
   ctx.clearRect(0, 0, w, h);

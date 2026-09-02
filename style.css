@@ -471,3 +471,42 @@ footer .fmark{font-family:'Newsreader',serif;font-style:italic;font-size:15px;co
 .autherr{color:var(--rose);font-size:11.5px;min-height:14px;}
 .authcard .mbtn{margin-top:4px;}
 .signout{font-size:9.5px;color:var(--soft);cursor:pointer;text-decoration:underline;letter-spacing:.05em;text-transform:uppercase;margin-top:3px;}
+
+/* ══════════ MOBILE: a phone-native layout, not a shrunk desktop page ══════════
+   Desktop keeps the exact folder-tab spec and full masthead untouched — everything here
+   is scoped to phone widths only, and changes STRUCTURE (where nav lives, how big the
+   header is) rather than the materials/colors/type, which is the identity worth keeping. */
+@media (max-width:700px){
+  /* compact top bar instead of a full decorative masthead eating the first screen */
+  header{padding-top:calc(env(safe-area-inset-top,0px) + 14px);}
+  .wordmark{font-size:23px;}
+  .datestamp{display:none;} /* the OS status bar already shows the clock/date */
+  canvas#band{height:8px;margin-top:10px;} /* stays an exact multiple of the 4-row/2px dither tile (see drawBand) so there's no seam */
+  .controls{margin-top:14px;}
+
+  /* a real bottom tab bar — the single biggest "this is an app" signal on a phone —
+     instead of a horizontally-scrolling strip pinned to the top of the page, which is
+     exactly the "website that reflowed" tell. Flat pills, not the folder/drawer look:
+     the drawer trick (feet, shared grey edge) only reads correctly merged with the panel
+     directly beneath it, which isn't true anymore once the bar lives at the bottom. */
+  .tabrow{
+    position:fixed;left:0;right:0;bottom:0;z-index:96;margin:0;
+    padding:8px 10px calc(env(safe-area-inset-bottom,0px) + 8px);
+    background:var(--card);border-top:1px solid var(--line);
+    align-items:center;gap:8px;box-shadow:0 -2px 10px rgba(40,35,28,.08);
+  }
+  .tab{border-radius:99px;border:1px solid var(--line);background:var(--card);padding:7px 14px;margin:0;}
+  .tab + .tab{margin-left:0;}
+  .tab::before,.tab::after{display:none;}
+  .tab.active{background:var(--grey);color:var(--paper);border-color:var(--grey);}
+  .tab.ghost{border-radius:99px;}
+  .folder{border-top:1px solid var(--line);} /* the thick grey top border was the other half of the drawer trick */
+
+  /* room for the fixed bottom bar + capture button so the last board card isn't hidden under them */
+  .wrap{padding-bottom:calc(env(safe-area-inset-bottom,0px) + 76px);}
+  .capture{right:16px;bottom:calc(env(safe-area-inset-bottom,0px) + 68px);}
+
+  /* the desktop board's playful per-card tilt reads as loose/unfinished in a cramped
+     single column rather than charming across a wide spread — keep phone cards upright */
+  .board .card:nth-child(odd),.board .card:nth-child(even){transform:none;}
+}
