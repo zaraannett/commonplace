@@ -78,6 +78,7 @@ function toDbRow(e) {
     weekly_target: e.weeklyTarget ?? null, checkins: e.checkins ?? null,
     box_id: e.boxId ?? null, image_url: e.imageUrl ?? null, drawing: e.drawing ?? null,
     font: e.font ?? null, underline: e.underline ?? false, highlight: e.highlight ?? false,
+    in_progress: e.inProgress ?? false,
   };
 }
 function fromDbRow(r) {
@@ -86,6 +87,7 @@ function fromDbRow(r) {
     tags: r.tags || [], dueAt: r.due_at, done: r.done, doneAt: r.done_at, pinned: r.pinned,
     boxId: r.box_id || null, imageUrl: r.image_url || null, drawing: r.drawing || null,
     font: r.font || null, underline: !!r.underline, highlight: !!r.highlight,
+    inProgress: !!r.in_progress,
     source: r.source || "manual",
   };
   if (r.weekly_target != null) e.weeklyTarget = r.weekly_target;
@@ -162,6 +164,23 @@ function toggleDone(id) {
   e.doneAt = e.done ? new Date().toISOString() : null;
   render();
   db.from("entries").update({ done: e.done, done_at: e.doneAt }).eq("id", id).then(({ error }) => { if (error) console.error("update failed", error); });
+}
+// Tasks specifically get a third state — not started -> in progress -> done -> back to not
+// started — cycled by clicking the same checkbox, rather than a separate control. "In progress"
+// tints the checkbox and gives the text a highlight-style wash (a distinct blue, not the same
+// yellow as the manual highlighter, so the two don't read as the same thing).
+function cycleTaskStatus(id) {
+  const e = entries.find((x) => x.id === id);
+  if (!e) return;
+  if (!e.done && !e.inProgress) {
+    e.inProgress = true;
+  } else if (e.inProgress) {
+    e.inProgress = false; e.done = true; e.doneAt = new Date().toISOString();
+  } else {
+    e.done = false; e.doneAt = null; e.inProgress = false;
+  }
+  render();
+  db.from("entries").update({ in_progress: e.inProgress, done: e.done, done_at: e.doneAt }).eq("id", id).then(({ error }) => { if (error) console.error("update failed", error); });
 }
 function toggleHabitCheckin(id) {
   const e = entries.find((x) => x.id === id);
@@ -523,7 +542,7 @@ function taskRowHtml(e) {
   const end = due ? `<span class="${due.cls}">${due.text}</span>` : "";
   const expanded = expandedTaskIds.has(e.id);
   return `<div class="taskrow">
-      <div class="row${e.done ? " done" : ""}" data-id="${e.id}">
+      <div class="row${e.done ? " done" : ""}${e.inProgress ? " in-progress" : ""}" data-id="${e.id}">
         <div class="box"></div><span class="txt" data-detail-toggle="${e.id}"${taskTextStyle(e)}>${escapeHtml(e.body)}</span>
         <span class="end">${end}<span class="del" data-del="${e.id}" title="delete">✕</span></span>
       </div>
@@ -567,7 +586,7 @@ function taskDetailCard(e) {
     `<span class="boxclose${e.highlight ? " active" : ""}" data-highlight="${e.id}" title="highlight">H</span>` +
     `<span class="boxclose" data-addtag="${e.id}" title="add tag">+</span>` +
     `<span class="boxclose" data-del="${e.id}" title="delete">✕</span></span></div>` +
-    `<div class="row${e.done ? " done" : ""}" data-id="${e.id}"><div class="box"></div><span class="txt"${taskTextStyle(e)}>${escapeHtml(e.body)}</span></div>` +
+    `<div class="row${e.done ? " done" : ""}${e.inProgress ? " in-progress" : ""}" data-id="${e.id}"><div class="box"></div><span class="txt"${taskTextStyle(e)}>${escapeHtml(e.body)}</span></div>` +
     detail;
   wireRows(card);
   wireTaskDetailInputs(card);
@@ -1225,7 +1244,9 @@ function wireRows(container) {
         render();
         return;
       }
-      if (row.dataset.habit) toggleHabitCheckin(row.dataset.id);
+      if (row.dataset.habit) { toggleHabitCheckin(row.dataset.id); return; }
+      const entry = entries.find((x) => x.id === row.dataset.id);
+      if (entry && entry.type === "task") cycleTaskStatus(row.dataset.id);
       else toggleDone(row.dataset.id);
     });
   });

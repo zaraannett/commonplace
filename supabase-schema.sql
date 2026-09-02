@@ -62,3 +62,7 @@ alter table entries add column if not exists drawing jsonb;
 alter table entries add column if not exists font text;
 alter table entries add column if not exists underline boolean default false;
 alter table entries add column if not exists highlight boolean default false;
+
+-- Migration 6 — a third task state (not started / in progress / done), cycled on the same
+-- checkbox.
+alter table entries add column if not exists in_progress boolean default false;
